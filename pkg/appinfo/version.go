@@ -84,8 +84,8 @@ func ShortVersion() string {
 	return version
 }
 
-func NewVersionWriter(v Version) VersionWriter {
-	return VersionWriter{
+func NewVersionWriter(v Version) *VersionWriter {
+	return &VersionWriter{
 		version: v,
 	}
 }
@@ -143,8 +143,12 @@ func (vw VersionWriter) Line() string {
 }
 
 func (vw VersionWriter) ShortLine() string {
-	v := vw.version
-	return fmt.Sprintf("%s (%s)", v.Version, v.Git.Commit)
+	v := vw.Version()
+	s := v.Version
+	if v.Git.Commit != "" {
+		s += " (" + v.Git.Commit + ")"
+	}
+	return s
 }
 
 func (vw VersionWriter) Extended() string {
