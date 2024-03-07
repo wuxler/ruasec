@@ -31,8 +31,8 @@ func TestLogger_SetLevel(t *testing.T) {
 
 	got := stdout.String()
 	want := strings.TrimLeft(`
-level=DEBUG source=logger_test.go:27 msg="log message with attrs" attr1=val1 attr2=val2
-level=DEBUG source=logger_test.go:28 msg="log message with format: hello"
+level=DEBUG source=logger_test.go:29 msg="log message with attrs" attr1=val1 attr2=val2
+level=DEBUG source=logger_test.go:30 msg="log message with format: hello"
 `, "\n")
 
 	assert.Equal(t, got, want)
