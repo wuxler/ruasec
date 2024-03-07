@@ -24,7 +24,7 @@ jobs:
         go-version: ${{matrix.go-version}}
 
     - name: Install Go Task Tool
-      uses: arduino/setup-task@v1
+      uses: arduino/setup-task@v2
       with:
         version: 3.x
         repo-token: ${{secrets.GITHUB_TOKEN}}
