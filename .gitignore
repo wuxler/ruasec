@@ -234,6 +234,9 @@ Temporary Items
 ### Custom patterns to ignore
 /tmp*
 dist/
+bin/
+.task/
 .go/
 .golangci-lint/
+
 

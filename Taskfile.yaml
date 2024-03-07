@@ -1,0 +1,81 @@
+version: "3"
+
+vars:
+  BIN: "{{.ROOT_DIR}}/bin"
+  OUTPUT: "{{.ROOT_DIR}}/dist"
+
+env:
+  CGO_ENABLED: "0"
+
+tasks:
+  default:
+    cmds:
+      - task: lint
+      - task: test
+
+  build:
+    desc: Build the application
+    sources:
+      - ./cmd/rua/**/*.go
+    cmds:
+      - go build -o {{.OUTPUT}}/rua{{exeExt}} ./cmd/rua
+
+  clean:
+    desc: Clean temp files and folders
+    cmds:
+      - rm -rf {{.OUTPUT}}
+
+  mod:
+    desc: Download and tidy Go modules
+    cmds:
+      - go mod download
+      - go mod tidy
+
+  vet:
+    desc: Run go vet against code
+    cmds:
+      - go vet ./...
+
+  test:
+    desc: Runs go test against code
+    cmds:
+      - go test ./...
+
+  lint:
+    desc: Run golangci-lint
+    aliases: [l]
+    deps: [install:golangci-lint]
+    cmds:
+      - "{{.BIN}}/golangci-lint run --verbose --concurrency 4 --timeout 5m --skip-dirs-use-default"
+
+  lint:fix:
+    desc: Run golangci-lint and fixes linting issues automatically
+    deps: [install:golangci-lint]
+    cmds:
+      - "{{.BIN}}/golangci-lint run --verbose --concurrency 4 --timeout 5m --skip-dirs-use-default --fix"
+
+  install:deps:
+    desc: Install all dependent tools
+    deps: [install:golangci-lint, install:goreleaser]
+
+  install:goreleaser:
+    desc: Install goreleaser@latest to {{.GOPATH}}/bin
+    vars:
+      VERSION: v1.24.0
+    env:
+      GOBIN: "{{.BIN}}"
+    status:
+      - go version -m {{.BIN}}/goreleaser | grep github.com/goreleaser/goreleaser | grep {{.VERSION}}
+    cmds:
+      - go install github.com/goreleaser/goreleaser@{{.VERSION}}
+
+  install:golangci-lint:
+    desc: Install golangci-lint@latest to {{.GOPATH}}/bin
+    vars:
+      VERSION: v1.56.2
+    env:
+      GOBIN: "{{.BIN}}"
+    status:
+      - go version -m {{.BIN}}/golangci-lint | grep github.com/golangci/golangci-lint | grep {{.VERSION}}
+    cmds:
+      - go install github.com/golangci/golangci-lint/cmd/golangci-lint@{{.VERSION}}
