@@ -1,0 +1,194 @@
+linters-settings:
+  depguard:
+    rules:
+      Main:
+        files:
+          - "$all"
+          - "!$test"
+        deny:
+          - pkg: github.com/sirupsen/logrus
+            desc: logging is allowed only by git.qingteng.cn/ms-app-sls/crack/pkg/common/xlog
+          - pkg: git.qingteng.cn/ms-public/qtmf/logx
+            desc: logging is allowed only by git.qingteng.cn/ms-app-sls/crack/pkg/common/xlog
+      Test:
+        files:
+          - "$test"
+        allow:
+          - "$gostd"
+          - "github.com/stretchr/testify"
+  dupl:
+    threshold: 200
+  funlen:
+    lines: 100
+    statements: 80
+  gci:
+    local-prefixes: git.qingteng.cn/ms-app-sls/crack
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport # https://github.com/go-critic/go-critic/issues/845
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+      - wrapperFunc
+  gocyclo:
+    min-complexity: 30
+  goimports:
+    local-prefixes: git.qingteng.cn/ms-app-sls/crack
+  gomnd:
+    settings:
+      mnd:
+        # don't include the "operation" and "assign"
+        checks: [argument, case, condition, return]
+  govet:
+    check-shadowing: false
+    settings:
+      printf:
+        funcs:
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+  lll:
+    line-length: 140
+  maligned:
+    suggest-new: true
+  misspell:
+    locale: US
+  nolintlint:
+    allow-unused: false # report any unused nolint directives
+    require-explanation: false # don't require an explanation for nolint directives
+    require-specific: false # don't require nolint directives to be specific about which linter is being skipped
+  errcheck:
+    check-blank: true
+    check-type-assertions: true
+
+linters:
+  # please, do not use `enable-all`: it's deprecated and will be removed soon.
+  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
+  disable-all: true
+  enable:
+    - bodyclose
+    # - deadcode # deprecated
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - exportloopref
+    - funlen
+    # - gochecknoinits # no need
+    - goconst
+    # - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    # - golint
+    - gomnd
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    # - interfacer
+    # - lll
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
+    - revive
+    # - rowserrcheck
+    # - scopelint
+    - staticcheck
+    # - structcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    # - varcheck
+    - whitespace
+
+  # don't enable:
+  # - asciicheck
+  # - gochecknoglobals
+  # - gocognit
+  # - godot
+  # - godox
+  # - goerr113
+  # - maligned
+  # - nestif
+  # - prealloc
+  # - testpackage
+  # - wsl
+
+issues:
+  exclude-use-default: false
+  # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gomnd
+    # https://github.com/go-critic/go-critic/issues/926
+    - linters:
+        - gocritic
+      text: "unnecessaryDefer:"
+    - path: pkg/config/
+      linters:
+        - lll
+
+  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
+  max-same-issues: 0
+
+run:
+  # default concurrency is a available CPU number
+  # concurrency: 4
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  timeout: 3m
+  # exit code when at least one issue was found, default is 1
+  # 在本地执行时返回 0 或 1 都没影响
+  # 在流水线中执行时如果返回 1 将中断流水线执行
+  issues-exit-code: 1
+  skip-dirs:
+    - pkg/core/registry/distribution/harbor/sdk/
+  skip-files:
+    - .*_test.go
+
+severity:
+  # Default value is empty string.
+  # Set the default severity for issues. If severity rules are defined and the issues
+  # do not match or no severity is provided to the rule this will be the default
+  # severity applied. Severities should match the supported severity names of the
+  # selected out format.
+  # - Code climate: https://docs.codeclimate.com/docs/issues#issue-severity
+  # -   Checkstyle: https://checkstyle.sourceforge.io/property_types.html#severity
+  # -       Github: https://help.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-error-message
+  default-severity: info
+  # The default value is false.
+  # If set to true severity-rules regular expressions become case sensitive.
+  case-sensitive: false
+  # Default value is empty list.
+  # When a list of severity rules are provided, severity information will be added to lint
+  # issues. Severity rules have the same filtering capability as exclude rules except you
+  # are allowed to specify one matcher per severity rule.
+  # Only affects out formats that support setting severity information.
+  rules:
+    - linters:
+        # - deadcode
+        - errcheck
+        - govet
+      severity: error
+
+# golangci.com configuration
+# https://github.com/golangci/golangci/wiki/Configuration
+service:
+  golangci-lint-version: 1.34.x # use the fixed version to not introduce new linters unexpectedly
+  prepare:
+    - echo "here I can run custom commands, but no preparation needed for this repo"

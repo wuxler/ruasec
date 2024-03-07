@@ -1,3 +1,4 @@
+// Package homedir provides methods to get or expand $HOME environment variable.
 package homedir
 
 import (
@@ -28,16 +29,18 @@ func MustGet() string {
 // If needing to do nss lookups, do not disable cgo or set osusergo.
 func Get() (string, error) {
 	var errs []error
-	if home, err := os.UserHomeDir(); err == nil && home != "" {
+	home, err := os.UserHomeDir()
+	if err == nil && home != "" {
 		return home, nil
-	} else {
-		errs = append(errs, err)
 	}
-	if u, err := user.Current(); err == nil && u != nil {
+	errs = append(errs, err)
+
+	u, err := user.Current()
+	if err == nil && u != nil {
 		return u.HomeDir, nil
-	} else {
-		errs = append(errs, err)
 	}
+	errs = append(errs, err)
+
 	return "", fmt.Errorf("unable to determine home directory: %w", errors.Join(errs...))
 }
 

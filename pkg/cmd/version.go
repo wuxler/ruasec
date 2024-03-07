@@ -8,17 +8,20 @@ import (
 	"github.com/wuxler/ruasec/pkg/appinfo"
 )
 
+// NewVersionCommand returns a version command.
 func NewVersionCommand() *VersionCommand {
 	return &VersionCommand{
 		Format: "text",
 	}
 }
 
+// VersionCommand is a generic version command for applications.
 type VersionCommand struct {
 	Short  bool
 	Format string
 }
 
+// ToCLI returns a *cli.Command.
 func (c *VersionCommand) ToCLI() *cli.Command {
 	return &cli.Command{
 		Name:   "version",
@@ -29,6 +32,7 @@ func (c *VersionCommand) ToCLI() *cli.Command {
 	}
 }
 
+// Run implements *cli.Command Action function.
 func (c *VersionCommand) Run(_ context.Context, cmd *cli.Command) error {
 	return appinfo.NewVersionWriter(appinfo.GetVersion()).
 		SetShort(c.Short).
@@ -37,6 +41,7 @@ func (c *VersionCommand) Run(_ context.Context, cmd *cli.Command) error {
 		Write(cmd.Writer)
 }
 
+// Flags returns a list of cli flags of the commands.
 func (c *VersionCommand) Flags() []cli.Flag {
 	return []cli.Flag{
 		&cli.BoolFlag{

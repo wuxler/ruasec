@@ -1,3 +1,4 @@
+// Package appinfo defines application build informations and runtime configures.
 package appinfo
 
 import (
@@ -10,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Pre-defined varaibles set by LDFLAGS like below:
+// Pre-defined variables set by LDFLAGS like below:
 //
 //	go build -ldflags '-X github.com/wuxler/ruasec/pkg/appinfo.version=v1.0.0'
 var (
@@ -84,12 +85,14 @@ func ShortVersion() string {
 	return version
 }
 
+// NewVersionWriter returns *VersionWriter which wrapped with Version.
 func NewVersionWriter(v Version) *VersionWriter {
 	return &VersionWriter{
 		version: v,
 	}
 }
 
+// VersionWriter wraps Version to provides helpful methods.
 type VersionWriter struct {
 	version Version
 
@@ -98,25 +101,31 @@ type VersionWriter struct {
 	appName string
 }
 
+// SetShort is a chain methods to set short options.
 func (vw *VersionWriter) SetShort(short bool) *VersionWriter {
 	vw.short = short
 	return vw
 }
 
+// SetFormat is a chian methods to set format options.
 func (vw *VersionWriter) SetFormat(format string) *VersionWriter {
 	vw.format = format
 	return vw
 }
 
+// SetAppName is a chian methods to set application name options.
 func (vw *VersionWriter) SetAppName(name string) *VersionWriter {
 	vw.appName = name
 	return vw
 }
 
+// Version returns wrapped Version object.
 func (vw VersionWriter) Version() Version {
 	return vw.version
 }
 
+// Write will write version information with options into io.Writer
+// and return error when failed.
 func (vw VersionWriter) Write(w io.Writer) error {
 	switch strings.ToLower(vw.format) {
 	case "yaml", "yml":
@@ -134,6 +143,8 @@ func (vw VersionWriter) Write(w io.Writer) error {
 	return err
 }
 
+// Line is a helpful methods to return one-line version string with application
+// name if set.
 func (vw VersionWriter) Line() string {
 	s := vw.ShortLine()
 	if vw.appName != "" {
@@ -142,6 +153,7 @@ func (vw VersionWriter) Line() string {
 	return s
 }
 
+// ShortLine is a helpful methods to return one-line version string.
 func (vw VersionWriter) ShortLine() string {
 	v := vw.Version()
 	s := v.Version
@@ -151,6 +163,7 @@ func (vw VersionWriter) ShortLine() string {
 	return s
 }
 
+// Extended is a helpful methods to return multiple lines version string.
 func (vw VersionWriter) Extended() string {
 	v := vw.version
 	var s string

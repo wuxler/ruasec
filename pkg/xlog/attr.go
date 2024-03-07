@@ -21,7 +21,7 @@ func ChainReplacer(replacers ...AttrReplacer) AttrReplacer {
 
 // NormalizeSourceAttrReplacer replaces source file path as basename.
 func NormalizeSourceAttrReplacer() AttrReplacer {
-	return func(groups []string, attr slog.Attr) Attr {
+	return func(_ []string, attr slog.Attr) Attr {
 		// Remove the directory from the source's filename.
 		if attr.Key == slog.SourceKey {
 			if source, ok := attr.Value.Any().(*slog.Source); ok {
