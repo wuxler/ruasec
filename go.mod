@@ -3,6 +3,7 @@ module github.com/wuxler/ruasec
 go 1.21
 
 require (
+	github.com/opencontainers/go-digest v1.0.1-0.20231212064514-429d0316a3dd
 	github.com/samber/lo v1.39.0
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli/v3 v3.0.0-alpha9
