@@ -31,6 +31,12 @@ tasks:
       - go mod download
       - go mod tidy
 
+  generate:
+    desc: Generate code
+    deps: [install:gomock]
+    cmds:
+      - go generate ./...
+
   vet:
     desc: Run go vet against code
     cmds:
@@ -39,7 +45,7 @@ tasks:
   test:
     desc: Runs go test against code
     cmds:
-      - go test ./...
+      - go test -cover ./...
 
   lint:
     desc: Run golangci-lint
@@ -54,28 +60,42 @@ tasks:
     cmds:
       - "{{.BIN}}/golangci-lint run --verbose --concurrency 4 --timeout 5m --skip-dirs-use-default --fix"
 
-  install:deps:
+  install:tools:
     desc: Install all dependent tools
-    deps: [install:golangci-lint, install:goreleaser]
+    deps:
+      - install:golangci-lint
+      - install:goreleaser
+      - install:gomock
 
   install:goreleaser:
-    desc: Install goreleaser@latest to {{.GOPATH}}/bin
     vars:
       VERSION: v1.24.0
     env:
       GOBIN: "{{.BIN}}"
+    desc: Install goreleaser@{{.VERSION}} to {{.BIN}}
     status:
       - go version -m {{.BIN}}/goreleaser | grep github.com/goreleaser/goreleaser | grep {{.VERSION}}
     cmds:
       - go install github.com/goreleaser/goreleaser@{{.VERSION}}
 
   install:golangci-lint:
-    desc: Install golangci-lint@latest to {{.GOPATH}}/bin
     vars:
       VERSION: v1.56.2
     env:
       GOBIN: "{{.BIN}}"
+    desc: Install golangci-lint@{{.VERSION}} to {{.BIN}}
     status:
       - go version -m {{.BIN}}/golangci-lint | grep github.com/golangci/golangci-lint | grep {{.VERSION}}
     cmds:
       - go install github.com/golangci/golangci-lint/cmd/golangci-lint@{{.VERSION}}
+
+  install:gomock:
+    vars:
+      VERSION: v0.4.0
+    env:
+      GOBIN: "{{.BIN}}"
+    desc: Install mockgen@{{.VERSION}} to {{.BIN}}
+    status:
+      - go version -m {{.BIN}}/mockgen | grep go.uber.org/mock | grep {{.VERSION}}
+    cmds:
+      - go install go.uber.org/mock/mockgen@{{.VERSION}}
