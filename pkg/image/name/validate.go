@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/opencontainers/go-digest"
+
 	"github.com/wuxler/ruasec/pkg/image/name/internal"
 )
 

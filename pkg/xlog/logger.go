@@ -209,7 +209,7 @@ func (l *Logger) log(ctx context.Context, level slog.Level, msg string, args ...
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	_ = l.Handler().Handle(ctx, r) //nolint:errcheck
+	_ = l.Handler().Handle(ctx, r) //nolint:errcheck // skip error
 }
 
 // logAttrs is like [Logger.log], but for methods that take ...Attr.
@@ -227,5 +227,5 @@ func (l *Logger) logAttrs(ctx context.Context, level slog.Level, msg string, att
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	_ = l.Handler().Handle(ctx, r) //nolint:errcheck
+	_ = l.Handler().Handle(ctx, r) //nolint:errcheck // skip error
 }

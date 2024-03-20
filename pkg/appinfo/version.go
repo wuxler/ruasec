@@ -33,27 +33,27 @@ var (
 // application version, Git information at build time, and environment
 // information.
 type Version struct {
-	Version string    `json:"version"`
-	Git     GitInfo   `json:"git"`
-	Build   BuildInfo `json:"build"`
+	Version string    `json:"version" yaml:"version"`
+	Git     GitInfo   `json:"git" yaml:"git"`
+	Build   BuildInfo `json:"build" yaml:"build"`
 }
 
 // GitInfo records the git informations at build time.
 type GitInfo struct {
-	Branch    string `json:"branch,omitempty"`
-	Commit    string `json:"commit"`
-	Tag       string `json:"tag"`
-	TreeState string `json:"treeState"`
+	Branch    string `json:"branch" yaml:"branch"`
+	Commit    string `json:"commit" yaml:"commit"`
+	Tag       string `json:"tag" yaml:"tag"`
+	TreeState string `json:"tree_state" yaml:"tree_state"`
 }
 
 // BuildInfo records the build informations.
 type BuildInfo struct {
-	BuildDate string `json:"buildDate"`
-	GoVersion string `json:"goVersion"`
-	Compiler  string `json:"compiler"`
-	OS        string `json:"os"`
-	Arch      string `json:"arch"`
-	Platform  string `json:"platform"`
+	BuildDate string `json:"build_date,omitempty" yaml:"build_date,omitempty"`
+	GoVersion string `json:"go_version,omitempty" yaml:"go_version,omitempty"`
+	Compiler  string `json:"compiler,omitempty" yaml:"compiler,omitempty"`
+	OS        string `json:"os,omitempty" yaml:"os,omitempty"`
+	Arch      string `json:"arch,omitempty" yaml:"arch,omitempty"`
+	Platform  string `json:"platform,omitempty" yaml:"platform,omitempty"`
 }
 
 // GetVersion returns the Version of the application.

@@ -12,19 +12,19 @@ import (
 	"github.com/wuxler/ruasec/pkg/image/name"
 )
 
-func subTestName(name string, good bool, notes ...string) string {
-	if name == "" {
-		name = "empty"
+func subTestName(tName string, good bool, notes ...string) string {
+	if tName == "" {
+		tName = "empty"
 	}
 	if len(notes) > 0 {
-		name = strings.Join(notes, " ") + " " + name
+		tName = strings.Join(notes, " ") + " " + tName
 	}
 	if good {
-		name = "(good) " + name
+		tName = "(good) " + tName
 	} else {
-		name = "(bad) " + name
+		tName = "(bad) " + tName
 	}
-	return name
+	return tName
 }
 
 func TestNewRegistry(t *testing.T) {

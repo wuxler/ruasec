@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/wuxler/ruasec/pkg/xlog"
 )
 
@@ -31,11 +32,11 @@ func TestLogger_SetLevel(t *testing.T) {
 
 	got := stdout.String()
 	want := strings.TrimLeft(`
-level=DEBUG source=logger_test.go:29 msg="log message with attrs" attr1=val1 attr2=val2
-level=DEBUG source=logger_test.go:30 msg="log message with format: hello"
+level=DEBUG source=logger_test.go:30 msg="log message with attrs" attr1=val1 attr2=val2
+level=DEBUG source=logger_test.go:31 msg="log message with format: hello"
 `, "\n")
 
-	assert.Equal(t, got, want)
+	assert.Equal(t, want, got)
 }
 
 func TestLogger_FileHandler(t *testing.T) {
@@ -62,22 +63,22 @@ func TestLogger_FileHandler(t *testing.T) {
 
 	t.Run("stdout", func(t *testing.T) {
 		want := strings.TrimLeft(`
-level=INFO source=logger_test.go:55 msg="log message with attrs" attr1=val1 attr2=val2
-level=INFO source=logger_test.go:56 msg="log message with format: hello"
-level=DEBUG source=logger_test.go:60 msg="log message with attrs" attr1=val1 attr2=val2
-level=DEBUG source=logger_test.go:61 msg="log message with format: hello"
+level=INFO source=logger_test.go:56 msg="log message with attrs" attr1=val1 attr2=val2
+level=INFO source=logger_test.go:57 msg="log message with format: hello"
+level=DEBUG source=logger_test.go:61 msg="log message with attrs" attr1=val1 attr2=val2
+level=DEBUG source=logger_test.go:62 msg="log message with format: hello"
 `, "\n")
-		assert.Equal(t, stdout.String(), want)
+		assert.Equal(t, want, stdout.String())
 	})
 
 	t.Run("logfile", func(t *testing.T) {
 		content, err := os.ReadFile(c.Path)
 		require.NoError(t, err)
 		want := strings.TrimLeft(`
-{"level":"INFO","source":{"function":"github.com/wuxler/ruasec/pkg/xlog_test.TestLogger_FileHandler","file":"logger_test.go","line":55},"msg":"log message with attrs","attr1":"val1","attr2":"val2"}
-{"level":"INFO","source":{"function":"github.com/wuxler/ruasec/pkg/xlog_test.TestLogger_FileHandler","file":"logger_test.go","line":56},"msg":"log message with format: hello"}
-{"level":"DEBUG","source":{"function":"github.com/wuxler/ruasec/pkg/xlog_test.TestLogger_FileHandler","file":"logger_test.go","line":60},"msg":"log message with attrs","attr1":"val1","attr2":"val2"}
-{"level":"DEBUG","source":{"function":"github.com/wuxler/ruasec/pkg/xlog_test.TestLogger_FileHandler","file":"logger_test.go","line":61},"msg":"log message with format: hello"}
+{"level":"INFO","source":{"function":"github.com/wuxler/ruasec/pkg/xlog_test.TestLogger_FileHandler","file":"logger_test.go","line":56},"msg":"log message with attrs","attr1":"val1","attr2":"val2"}
+{"level":"INFO","source":{"function":"github.com/wuxler/ruasec/pkg/xlog_test.TestLogger_FileHandler","file":"logger_test.go","line":57},"msg":"log message with format: hello"}
+{"level":"DEBUG","source":{"function":"github.com/wuxler/ruasec/pkg/xlog_test.TestLogger_FileHandler","file":"logger_test.go","line":61},"msg":"log message with attrs","attr1":"val1","attr2":"val2"}
+{"level":"DEBUG","source":{"function":"github.com/wuxler/ruasec/pkg/xlog_test.TestLogger_FileHandler","file":"logger_test.go","line":62},"msg":"log message with format: hello"}
 `, "\n")
 		assert.Equal(t, want, string(content))
 	})

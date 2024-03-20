@@ -72,7 +72,7 @@ func DetectMediaType(content []byte) string {
 			return MediaTypeDockerV2S1SignedManifest
 		}
 		return MediaTypeDockerV2S1Manifest
-	case 2: //nolint:gomnd
+	case 2: //nolint:gomnd // skip magic number check
 		// Best effort to understand if this is an OCI image since mediaType
 		// wasn't in the manifest for OCI image-spec < 1.0.2.
 		// For docker v2s2 meta.MediaType should have been set. But given the data,

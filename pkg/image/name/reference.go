@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/opencontainers/go-digest"
+
 	"github.com/wuxler/ruasec/pkg/image/name/internal"
 )
 
@@ -107,7 +108,7 @@ func parseReference(name string, opts options) (Reference, error) {
 
 	remoteName := matches[1]
 	if scheme != "" {
-		remoteName = scheme + "://" + remoteName //nolint:goconst
+		remoteName = scheme + "://" + remoteName //nolint:goconst // skip const required
 	}
 	repo, err := newRepository(remoteName, opts)
 	if err != nil {

@@ -162,7 +162,7 @@ func isDockerLegacyDomain(hostname string) (string, bool) {
 }
 
 // splitAndTrimScheme splits scheme prefix, returns scheme and trimmed name.
-func splitAndTrimScheme(name string) (scheme string, remainder string) {
+func splitAndTrimScheme(name string) (scheme, remainder string) {
 	matches, _ := xregexp.SubmatchCaptures(internal.AnchoredSchemePrefixRegexp, name)
 	if prefix, ok := matches["prefix"]; ok {
 		scheme = strings.TrimSuffix(prefix, "://")

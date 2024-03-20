@@ -118,6 +118,7 @@ func (m *SignedManifest) UnmarshalJSON(b []byte) error {
 
 	m.ExtractedV1Compatibility = make([]V1Compatibility, len(mfst.History))
 	for i, h := range mfst.History {
+		//nolint:musttag // we're not using the struct tags here
 		if err := json.Unmarshal([]byte(h.V1Compatibility), &m.ExtractedV1Compatibility[i]); err != nil {
 			return manifest.NewErrInvalidField(
 				"parsing docker v2 schema1 history entry %d error: %w", i, err)
