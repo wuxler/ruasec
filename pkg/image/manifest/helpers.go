@@ -132,11 +132,11 @@ func NewDescriptorFromBytes(mediaType string, content []byte) imgspecv1.Descript
 // docker v2 schema1 manifest.
 func NonEmptyLayers(descriptors ...LayerDescriptor) []LayerDescriptor {
 	clean := []LayerDescriptor{}
-	for _, desc := range descriptors {
-		if desc.Empty {
+	for i := range descriptors {
+		if descriptors[i].Empty {
 			continue
 		}
-		clean = append(clean, desc)
+		clean = append(clean, descriptors[i])
 	}
 	return clean
 }
@@ -145,11 +145,11 @@ func NonEmptyLayers(descriptors ...LayerDescriptor) []LayerDescriptor {
 func ImageSize(m ImageManifest) int64 {
 	var size int64
 	layers := NonEmptyLayers(m.Layers()...)
-	for _, layer := range layers {
-		if layer.Size < 0 {
+	for i := range layers {
+		if layers[i].Size < 0 {
 			continue
 		}
-		size += layer.Size
+		size += layers[i].Size
 	}
 	return size
 }
