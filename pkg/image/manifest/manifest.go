@@ -25,6 +25,8 @@ func ParseBytes(content []byte) (Manifest, imgspecv1.Descriptor, error) {
 	return m, desc, nil
 }
 
+//go:generate mockgen -destination=./mocks/mock_manifest.go -package=mocks github.com/wuxler/ruasec/pkg/image/manifest Manifest,IndexManifest,ImageManifest
+
 // Manifest represents a registry object specifying a set of
 // references and an optional target.
 type Manifest interface {
