@@ -1,4 +1,4 @@
-package ocischema_test
+package dockerschema2_test
 
 import (
 	"os"
@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/wuxler/ruasec/pkg/image/manifest"
-	"github.com/wuxler/ruasec/pkg/image/manifest/ocischema"
+	"github.com/wuxler/ruasec/pkg/image/manifest/dockerschema2"
 )
 
 func TestUnmarshalImageManifest(t *testing.T) {
@@ -21,73 +21,56 @@ func TestUnmarshalImageManifest(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			input: "ociv1.manifest.json",
+			input: "v2s2.manifest.json",
 			desc: imgspecv1.Descriptor{
-				MediaType: manifest.MediaTypeImageManifest,
-				Size:      951,
-				Digest:    "sha256:bb76e395cb9021fd062b352172ac87ca159b3e84f5a5758a69db824da876cd4f",
+				MediaType: manifest.MediaTypeDockerV2S2Manifest,
+				Size:      995,
+				Digest:    "sha256:20bf21ed457b390829cdbeec8795a7bea1626991fda603e0d01b4e7f60427e55",
 			},
 			references: []imgspecv1.Descriptor{
 				// config
 				{
-					MediaType: manifest.MediaTypeImageConfig,
+					MediaType: manifest.MediaTypeDockerV2S2ImageConfig,
 					Size:      7023,
 					Digest:    "sha256:b5b2b2c507a0944348e0303114d8d93aaaa081732b86451d9bce1f432a537bc7",
 				},
 				// layers
 				{
-					MediaType: manifest.MediaTypeImageLayerGzip,
+					MediaType: manifest.MediaTypeDockerV2S2ImageLayerGzip,
 					Size:      32654,
 					Digest:    "sha256:e692418e4cbaf90ca69d05a66403747baa33ee08806650b51fab815ad7fc331f",
 				},
 				{
-					MediaType: manifest.MediaTypeImageLayerGzip,
+					MediaType: manifest.MediaTypeDockerV2S2ImageLayerGzip,
 					Size:      16724,
 					Digest:    "sha256:3c3a4604a545cdc127456d94e421cd355bca5b528f4a9c1905b15da2eb4a4c6b",
 				},
 				{
-					MediaType: manifest.MediaTypeImageLayerGzip,
+					MediaType: manifest.MediaTypeDockerV2S2ImageLayerGzip,
 					Size:      73109,
 					Digest:    "sha256:ec4b8955958665577945c89419d1af06b5f7636b4ac3da7f12184802ad867736",
 				},
 			},
 		},
 		{
-			input: "ociv1.manifest.nomime.json",
+			input: "v2s2.manifest.nomime.json",
 			desc: imgspecv1.Descriptor{
-				MediaType: manifest.MediaTypeImageManifest,
-				Size:      890,
-				Digest:    "sha256:f94f91aaa4bfad8e67ef7f5cde3a0e908bd22e758868ca47227e60a8ea623d1c",
+				MediaType: manifest.MediaTypeDockerV2S2Manifest,
+				Size:      258,
+				Digest:    "sha256:e7648e3307f0760138714bf63f73985c2ead2ed30ec7000378553e8be3d3f207",
 			},
 			references: []imgspecv1.Descriptor{
-				// config
 				{
-					MediaType: manifest.MediaTypeImageConfig,
+					MediaType: "application/vnd.docker.container.image.v1+json",
 					Size:      7023,
 					Digest:    "sha256:b5b2b2c507a0944348e0303114d8d93aaaa081732b86451d9bce1f432a537bc7",
-				},
-				// layers
-				{
-					MediaType: manifest.MediaTypeImageLayerGzip,
-					Size:      32654,
-					Digest:    "sha256:e692418e4cbaf90ca69d05a66403747baa33ee08806650b51fab815ad7fc331f",
-				},
-				{
-					MediaType: manifest.MediaTypeImageLayerGzip,
-					Size:      16724,
-					Digest:    "sha256:3c3a4604a545cdc127456d94e421cd355bca5b528f4a9c1905b15da2eb4a4c6b",
-				},
-				{
-					MediaType: manifest.MediaTypeImageLayerGzip,
-					Size:      73109,
-					Digest:    "sha256:ec4b8955958665577945c89419d1af06b5f7636b4ac3da7f12184802ad867736",
 				},
 			},
 		},
 		{
 			input: "ociv1.artifact.json",
 			desc: imgspecv1.Descriptor{
-				MediaType: manifest.MediaTypeImageManifest,
+				MediaType: manifest.MediaTypeDockerV2S2Manifest,
 				Size:      226,
 				Digest:    "sha256:ec7d9117f157e92a0fa93de1c9ad07fd8e193dca520684b0a5d67f4f73cd03a0",
 			},
@@ -100,7 +83,7 @@ func TestUnmarshalImageManifest(t *testing.T) {
 		{
 			input: "ociv1.artifact.nomime.json",
 			desc: imgspecv1.Descriptor{
-				MediaType: manifest.MediaTypeImageManifest,
+				MediaType: manifest.MediaTypeDockerV2S2Manifest,
 				Size:      165,
 				Digest:    "sha256:d33c74c6e3aacaff74a6a22f22b2e5e6a04b120546a910d320fc6ba033136db8",
 			},
@@ -111,15 +94,16 @@ func TestUnmarshalImageManifest(t *testing.T) {
 			},
 		},
 		{
-			input:   "ociv1.index.json",
+			input:   "v2s2.manifest.list.json",
 			wantErr: true,
 		},
 	}
+
 	for _, tc := range testcases {
 		t.Run(tc.input, func(t *testing.T) {
 			content, err := os.ReadFile(filepath.Join("..", "testdata", tc.input))
 			require.NoError(t, err)
-			mnft, desc, err := ocischema.UnmarshalImageManifest(content)
+			mnft, desc, err := dockerschema2.UnmarshalImageManifest(content)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -145,7 +129,7 @@ func TestUnmarshalImageManifest(t *testing.T) {
 	}
 }
 
-func TestUnmarshalIndexManifest(t *testing.T) {
+func TestUnmarshalManifestList(t *testing.T) {
 	testcases := []struct {
 		input      string
 		desc       imgspecv1.Descriptor
@@ -153,65 +137,72 @@ func TestUnmarshalIndexManifest(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			input: "ociv1.index.json",
+			input: "v2s2.manifest.list.json",
 			desc: imgspecv1.Descriptor{
-				MediaType: manifest.MediaTypeImageIndex,
-				Size:      794,
-				Digest:    "sha256:d59976e8b293d743edfd0d9f985207acd97bcca66cb27506bc6e974af13f729e",
+				MediaType: manifest.MediaTypeDockerV2S2ManifestList,
+				Size:      1797,
+				Digest:    "sha256:ae55d2bdfcc9f24b2ac571f0081a64d6e6089b2c5e503ff3b718a646c26cbd3d",
 			},
 			references: []imgspecv1.Descriptor{
 				{
-					MediaType: manifest.MediaTypeImageManifest,
-					Size:      7143,
-					Digest:    "sha256:e692418e4cbaf90ca69d05a66403747baa33ee08806650b51fab815ad7fc331f",
+					MediaType: manifest.MediaTypeDockerV2S1Manifest,
+					Size:      2094,
+					Digest:    "sha256:7820f9a86d4ad15a2c4f0c0e5479298df2aa7c2f6871288e2ef8546f3e7b6783",
 					Platform: &imgspecv1.Platform{
 						Architecture: "ppc64le",
 						OS:           "linux",
 					},
 				},
 				{
-					MediaType: manifest.MediaTypeImageManifest,
-					Size:      7682,
-					Digest:    "sha256:5b0bcabd1ed22e9fb1310cf6c2dec7cdef19f0ad69efa1f392e94a4333501270",
+					MediaType: manifest.MediaTypeDockerV2S1Manifest,
+					Size:      1922,
+					Digest:    "sha256:ae1b0e06e8ade3a11267564a26e750585ba2259c0ecab59ab165ad1af41d1bdd",
 					Platform: &imgspecv1.Platform{
 						Architecture: "amd64",
 						OS:           "linux",
-						OSFeatures:   []string{"sse4"},
+					},
+				},
+				{
+					MediaType: manifest.MediaTypeDockerV2S1Manifest,
+					Size:      2084,
+					Digest:    "sha256:e4c0df75810b953d6717b8f8f28298d73870e8aa2a0d5e77b8391f16fdfbbbe2",
+					Platform: &imgspecv1.Platform{
+						Architecture: "s390x",
+						OS:           "linux",
+					},
+				},
+				{
+					MediaType: manifest.MediaTypeDockerV2S1Manifest,
+					Size:      2084,
+					Digest:    "sha256:07ebe243465ef4a667b78154ae6c3ea46fdb1582936aac3ac899ea311a701b40",
+					Platform: &imgspecv1.Platform{
+						Architecture: "arm",
+						OS:           "linux",
+						Variant:      "armv7",
+					},
+				},
+				{
+					MediaType: manifest.MediaTypeDockerV2S1Manifest,
+					Size:      2090,
+					Digest:    "sha256:fb2fc0707b86dafa9959fe3d29e66af8787aee4d9a23581714be65db4265ad8a",
+					Platform: &imgspecv1.Platform{
+						Architecture: "arm64",
+						OS:           "linux",
+						Variant:      "armv8",
 					},
 				},
 			},
 		},
 		{
-			input: "ociv1.index.nomime.json",
+			input: "v2s2.manifest.list.nomime.json",
 			desc: imgspecv1.Descriptor{
-				MediaType: manifest.MediaTypeImageIndex,
-				Size:      736,
-				Digest:    "sha256:e23eee643694928ed2881e2bce25afd051cb2c8d2f0cbd46fb9f5e8e84ba23eb",
-			},
-			references: []imgspecv1.Descriptor{
-				{
-					MediaType: manifest.MediaTypeImageManifest,
-					Size:      7143,
-					Digest:    "sha256:e692418e4cbaf90ca69d05a66403747baa33ee08806650b51fab815ad7fc331f",
-					Platform: &imgspecv1.Platform{
-						Architecture: "ppc64le",
-						OS:           "linux",
-					},
-				},
-				{
-					MediaType: manifest.MediaTypeImageManifest,
-					Size:      7682,
-					Digest:    "sha256:5b0bcabd1ed22e9fb1310cf6c2dec7cdef19f0ad69efa1f392e94a4333501270",
-					Platform: &imgspecv1.Platform{
-						Architecture: "amd64",
-						OS:           "linux",
-						OSFeatures:   []string{"sse4"},
-					},
-				},
+				MediaType: manifest.MediaTypeDockerV2S2ManifestList,
+				Size:      48,
+				Digest:    "sha256:977db5ba7cc96e09492cc0f6820d6980adb4cfde040ac871d3a49cf30676841d",
 			},
 		},
 		{
-			input:   "ociv1.manifest.json",
+			input:   "v2s2.manifest.json",
 			wantErr: true,
 		},
 	}
@@ -219,7 +210,7 @@ func TestUnmarshalIndexManifest(t *testing.T) {
 		t.Run(tc.input, func(t *testing.T) {
 			content, err := os.ReadFile(filepath.Join("..", "testdata", tc.input))
 			require.NoError(t, err)
-			mnft, desc, err := ocischema.UnmarshalIndexManifest(content)
+			mnft, desc, err := dockerschema2.UnmarshalManifestList(content)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return

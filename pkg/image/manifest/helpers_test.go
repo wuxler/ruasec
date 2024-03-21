@@ -18,7 +18,7 @@ import (
 var FileDigests = map[string]digest.Digest{
 	"v2s2.manifest.json":          digest.Digest("sha256:20bf21ed457b390829cdbeec8795a7bea1626991fda603e0d01b4e7f60427e55"),
 	"v2s1.manifest.json":          digest.Digest("sha256:7364fea9d84ee548ab67d4c46c6006289800c98de3fbf8c0a97138dfcc23f000"),
-	"v2s1-unsigned.manifest.json": digest.Digest("sha256:7364fea9d84ee548ab67d4c46c6006289800c98de3fbf8c0a97138dfcc23f000"),
+	"v2s1.manifest.unsigned.json": digest.Digest("sha256:7364fea9d84ee548ab67d4c46c6006289800c98de3fbf8c0a97138dfcc23f000"),
 	"empty":                       digest.Digest("sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
 }
 
@@ -32,7 +32,7 @@ func TestDetectMediaType(t *testing.T) {
 			want:  manifest.MediaTypeDockerV2S2Manifest,
 		},
 		{
-			input: "v2list.manifest.json",
+			input: "v2s2.manifest.list.json",
 			want:  manifest.MediaTypeDockerV2S2ManifestList,
 		},
 		{
@@ -40,15 +40,15 @@ func TestDetectMediaType(t *testing.T) {
 			want:  manifest.MediaTypeDockerV2S1SignedManifest,
 		},
 		{
-			input: "v2s1-unsigned.manifest.json",
+			input: "v2s1.manifest.unsigned.json",
 			want:  manifest.MediaTypeDockerV2S1Manifest,
 		},
 		{
-			input: "v2s1-invalid-signatures.manifest.json",
+			input: "v2s1.manifest.invalid-signatures.json",
 			want:  manifest.MediaTypeDockerV2S1SignedManifest,
 		},
 		{
-			input: "v2s2nomime.manifest.json",
+			input: "v2s2.manifest.nomime.json",
 			want:  manifest.MediaTypeDockerV2S2Manifest,
 		},
 		{
@@ -60,19 +60,19 @@ func TestDetectMediaType(t *testing.T) {
 			want:  manifest.MediaTypeImageManifest,
 		},
 		{
-			input: "ociv1.image.index.json",
+			input: "ociv1.index.json",
 			want:  manifest.MediaTypeImageIndex,
 		},
 		{
-			input: "ociv1nomime.manifest.json",
+			input: "ociv1.manifest.nomime.json",
 			want:  manifest.MediaTypeImageManifest,
 		},
 		{
-			input: "ociv1nomime.artifact.json",
+			input: "ociv1.artifact.nomime.json",
 			want:  manifest.MediaTypeImageManifest,
 		},
 		{
-			input: "ociv1nomime.image.index.json",
+			input: "ociv1.index.nomime.json",
 			want:  manifest.MediaTypeImageIndex,
 		},
 		{
@@ -101,8 +101,8 @@ func TestDigest(t *testing.T) {
 	}{
 		{input: "v2s2.manifest.json"},
 		{input: "v2s1.manifest.json"},
-		{input: "v2s1-unsigned.manifest.json"},
-		{input: "v2s1-invalid-signatures.manifest.json", wantErr: true},
+		{input: "v2s1.manifest.unsigned.json"},
+		{input: "v2s1.manifest.invalid-signatures.json", wantErr: true},
 		{input: "empty"},
 	}
 	for _, tc := range testcases {
@@ -156,7 +156,7 @@ func TestMatchDigest(t *testing.T) {
 			want:  false,
 		},
 		{input: "v2s2.manifest.json", dgst: digest.Digest(""), want: false},
-		{input: "v2s1-invalid-signatures.manifest.json", wantErr: true},
+		{input: "v2s1.manifest.invalid-signatures.json", wantErr: true},
 	}
 
 	for _, tc := range testcases {

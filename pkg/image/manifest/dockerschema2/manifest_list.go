@@ -29,16 +29,17 @@ func (m ManifestList) MediaType() string {
 // References returns the distribution descriptors for the referenced image
 // manifests.
 func (m ManifestList) References() []imgspecv1.Descriptor {
-	dependencies := make([]imgspecv1.Descriptor, len(m.Manifests))
+	var dependencies []imgspecv1.Descriptor
 	for i := range m.Manifests {
-		dependencies[i] = m.Manifests[i].Descriptor
-		dependencies[i].Platform = &imgspecv1.Platform{
+		desc := m.Manifests[i].Descriptor
+		desc.Platform = &imgspecv1.Platform{
 			Architecture: m.Manifests[i].Platform.Architecture,
 			OS:           m.Manifests[i].Platform.OS,
 			OSVersion:    m.Manifests[i].Platform.OSVersion,
 			OSFeatures:   m.Manifests[i].Platform.OSFeatures,
 			Variant:      m.Manifests[i].Platform.Variant,
 		}
+		dependencies = append(dependencies, desc)
 	}
 
 	return dependencies
