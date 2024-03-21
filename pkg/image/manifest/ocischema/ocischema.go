@@ -2,8 +2,6 @@
 package ocischema
 
 import (
-	"fmt"
-
 	"github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
@@ -24,23 +22,17 @@ func UnmarshalImageManifest(b []byte) (manifest.Manifest, imgspecv1.Descriptor, 
 		return nil, imgspecv1.Descriptor{}, err
 	}
 
-	expect := manifest.MediaTypeImageManifest
-
-	if m.MediaType() != expect {
-		return nil, imgspecv1.Descriptor{}, fmt.Errorf(
-			"mediaType in manifest list should be '%s' but got '%s'", expect, m.MediaType())
-	}
-
+	expectMediaType := manifest.MediaTypeImageManifest
 	if err := manifest.ValidateUnambiguousManifestFormat(
 		b,
-		expect,
+		expectMediaType,
 		manifest.AllowedFieldConfig|manifest.AllowedFieldLayers,
 	); err != nil {
 		return nil, imgspecv1.Descriptor{}, err
 	}
 
 	desc := imgspecv1.Descriptor{
-		MediaType: expect,
+		MediaType: expectMediaType,
 		Size:      int64(len(b)),
 		Digest:    digest.FromBytes(b),
 	}
@@ -55,24 +47,17 @@ func UnmarshalIndexManifest(b []byte) (manifest.Manifest, imgspecv1.Descriptor, 
 		return nil, imgspecv1.Descriptor{}, err
 	}
 
-	expect := manifest.MediaTypeImageIndex
-
-	if m.MediaType() != expect {
-		return nil, imgspecv1.Descriptor{}, fmt.Errorf(
-			"mediaType in image index manifest should be '%s' but got '%s'",
-			expect, m.MediaType())
-	}
-
+	expectMediaType := manifest.MediaTypeImageIndex
 	if err := manifest.ValidateUnambiguousManifestFormat(
 		b,
-		expect,
+		expectMediaType,
 		manifest.AllowedFieldManifests,
 	); err != nil {
 		return nil, imgspecv1.Descriptor{}, err
 	}
 
 	desc := imgspecv1.Descriptor{
-		MediaType: expect,
+		MediaType: expectMediaType,
 		Size:      int64(len(b)),
 		Digest:    digest.FromBytes(b),
 	}

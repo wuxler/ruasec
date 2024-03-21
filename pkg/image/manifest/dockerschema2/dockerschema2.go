@@ -2,8 +2,6 @@
 package dockerschema2
 
 import (
-	"fmt"
-
 	"github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
@@ -24,23 +22,17 @@ func UnmarshalImageManifest(b []byte) (manifest.Manifest, imgspecv1.Descriptor, 
 		return nil, imgspecv1.Descriptor{}, err
 	}
 
-	expect := manifest.MediaTypeDockerV2S2Manifest
-
-	if m.MediaType() != expect {
-		return nil, imgspecv1.Descriptor{}, fmt.Errorf(
-			"mediaType in manifest list should be '%s' but got '%s'", expect, m.MediaType())
-	}
-
+	expectMediaType := manifest.MediaTypeDockerV2S2Manifest
 	if err := manifest.ValidateUnambiguousManifestFormat(
 		b,
-		expect,
+		expectMediaType,
 		manifest.AllowedFieldConfig|manifest.AllowedFieldLayers,
 	); err != nil {
 		return nil, imgspecv1.Descriptor{}, err
 	}
 
 	desc := imgspecv1.Descriptor{
-		MediaType: expect,
+		MediaType: expectMediaType,
 		Size:      int64(len(b)),
 		Digest:    digest.FromBytes(b),
 	}
@@ -55,23 +47,17 @@ func UnmarshalManifestList(b []byte) (manifest.Manifest, imgspecv1.Descriptor, e
 		return nil, imgspecv1.Descriptor{}, err
 	}
 
-	expect := manifest.MediaTypeDockerV2S2ManifestList
-
-	if m.MediaType() != expect {
-		return nil, imgspecv1.Descriptor{}, fmt.Errorf(
-			"mediaType in manifest list should be '%s' but got '%s'", expect, m.MediaType())
-	}
-
+	expectMediaType := manifest.MediaTypeDockerV2S2ManifestList
 	if err := manifest.ValidateUnambiguousManifestFormat(
 		b,
-		expect,
+		expectMediaType,
 		manifest.AllowedFieldManifests,
 	); err != nil {
 		return nil, imgspecv1.Descriptor{}, err
 	}
 
 	desc := imgspecv1.Descriptor{
-		MediaType: expect,
+		MediaType: expectMediaType,
 		Size:      int64(len(b)),
 		Digest:    digest.FromBytes(b),
 	}
