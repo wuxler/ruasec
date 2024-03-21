@@ -2,6 +2,7 @@ package dockerschema1
 
 import (
 	"encoding/json"
+	"errors"
 	"regexp"
 	"slices"
 
@@ -46,12 +47,12 @@ func (m SignedManifest) MediaType() string {
 
 // References returns the descriptors of this manifests references.
 func (m SignedManifest) References() []imgspecv1.Descriptor {
-	dependencies := make([]imgspecv1.Descriptor, len(m.FSLayers))
-	for i, fsLayer := range m.FSLayers {
-		dependencies[i] = imgspecv1.Descriptor{
+	dependencies := []imgspecv1.Descriptor{}
+	for i := range m.FSLayers {
+		dependencies = append(dependencies, imgspecv1.Descriptor{
 			MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
-			Digest:    fsLayer.BlobSum,
-		}
+			Digest:    m.FSLayers[i].BlobSum,
+		})
 	}
 
 	return dependencies
@@ -86,20 +87,28 @@ func (m *SignedManifest) UnmarshalJSON(b []byte) error {
 	// store manifest and signatures in all
 	copy(m.all, b)
 
+	var mediaType string
+	var payload []byte
 	jsig, err := libtrust.ParsePrettySignature(b, "signatures")
-	if err != nil {
-		return err
-	}
-
-	// Resolve the payload in the manifest.
-	bytes, err := jsig.Payload()
-	if err != nil {
+	if err == nil {
+		// Resolve the payload in the manifest.
+		bytes, perr := jsig.Payload()
+		if perr != nil {
+			return perr
+		}
+		payload = bytes
+		mediaType = manifest.MediaTypeDockerV2S1SignedManifest
+	} else if errors.Is(err, libtrust.ErrMissingSignatureKey) {
+		// If there are no signatures, just use the raw manifest.
+		payload = b
+		mediaType = manifest.MediaTypeDockerV2S1Manifest
+	} else {
 		return err
 	}
 
 	// m.Canonical stores the canonical manifest JSON
-	m.Canonical = make([]byte, len(bytes))
-	copy(m.Canonical, bytes)
+	m.Canonical = make([]byte, len(payload))
+	copy(m.Canonical, payload)
 
 	// Unmarshal canonical JSON into Manifest object
 	var mfst Manifest
@@ -124,6 +133,7 @@ func (m *SignedManifest) UnmarshalJSON(b []byte) error {
 				"parsing docker v2 schema1 history entry %d error: %w", i, err)
 		}
 	}
+	mfst.Versioned.MediaType = mediaType
 	m.Manifest = mfst
 
 	return m.fixManifestLayers()

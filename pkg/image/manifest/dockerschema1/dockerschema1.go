@@ -26,7 +26,7 @@ func UnmarshalImageManifest(b []byte) (manifest.Manifest, imgspecv1.Descriptor, 
 	if m.SchemaVersion != 1 {
 		return nil, imgspecv1.Descriptor{}, fmt.Errorf("schema version must be 1 but got %d", m.SchemaVersion)
 	}
-	expectMediaType := manifest.MediaTypeDockerV2S1SignedManifest
+	expectMediaType := m.MediaType()
 	if err := manifest.ValidateUnambiguousManifestFormat(
 		b,
 		expectMediaType,
