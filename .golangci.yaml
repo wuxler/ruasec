@@ -389,6 +389,7 @@ issues:
         - funlen
         - lll
         - unparam
+        - goconst
     - path: pkg/image/manifest/
       linters:
         - staticcheck
