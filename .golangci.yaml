@@ -158,7 +158,7 @@ linters-settings:
     # Default: []
     disable:
       - fieldalignment # too strict
-      # - shadow
+      - shadow
     settings:
       printf:
         funcs:
@@ -166,10 +166,10 @@ linters-settings:
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
-      shadow:
-        # Whether to be strict about shadowing; can be noisy.
-        # Default: false
-        strict: false
+      # shadow:
+      #   # Whether to be strict about shadowing; can be noisy.
+      #   # Default: false
+      #   strict: false
 
   inamedparam:
     # Skips check for interface methods with only a single parameter.
@@ -249,6 +249,12 @@ linters-settings:
     # # Default: false
     # check-all: false
 
+  # See https://golangci-lint.run/usage/linters/#revive
+  revive:
+    rules:
+      - name: unused-parameter
+        disabled: true
+
 linters:
   # please, do not use `enable-all`: it's deprecated and will be removed soon.
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
@@ -289,7 +295,6 @@ linters:
     - gomodguard # allow and block lists linter for direct Go module dependencies. This is different from depguard where there are different block types for example version constraints and module recommendations
     - goprintffuncname # checks that printf-like functions are named with f at the end
     - gosec # inspects source code for security problems
-    - lll # reports long lines
     - loggercheck # checks key value pairs for common logger libraries (kitlog,klog,logr,zap)
     - makezero # finds slice declarations with non-zero initial length
     - mirror # reports wrong mirror patterns of bytes/strings usage
@@ -323,6 +328,7 @@ linters:
     - gci # controls golang package import order and makes it always deterministic
 
     ## you may want to enable
+    # - lll # reports long lines
     #- decorder # checks declaration order and count of types, constants, variables and functions
     #- exhaustruct # [highly recommend to enable] checks if all structure fields are initialized
     #- ginkgolinter # [if you use ginkgo/gomega] enforces standards of using ginkgo and gomega

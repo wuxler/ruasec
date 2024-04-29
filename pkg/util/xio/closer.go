@@ -10,7 +10,9 @@ import (
 
 // CloseAndSkipError is used to close the io.Closer and ignore the error returned.
 func CloseAndSkipError(c io.Closer) {
-	_ = c.Close()
+	if c != nil {
+		_ = c.Close()
+	}
 }
 
 // CloseAndLogError is used to close the io.Closer and log out as warning when the error

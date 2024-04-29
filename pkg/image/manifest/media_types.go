@@ -107,7 +107,7 @@ const (
 // V2 Schema1
 // See https://docker-docs.uclv.cu/registry/spec/manifest-v2-1/
 //
-// Deprecated: Docker Image Manifest v2, Schema 1 is deprecated since 2015.
+// NOTE: Docker Image Manifest v2, Schema 1 is deprecated since 2015.
 // Use Docker Image Manifest v2, Schema 2, or the OCI Image Specification.
 const (
 	// MediaTypeDockerV2S1Manifest specifies the mediaType for the current version. Note
