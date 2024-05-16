@@ -3,12 +3,12 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/wuxler/ruasec/pkg/cmd"
+	"github.com/wuxler/ruasec/pkg/commands"
+	"github.com/wuxler/ruasec/pkg/commands/registry"
 )
 
 const (
@@ -23,10 +23,15 @@ func main() {
 		EnableShellCompletion: true,
 		HideVersion:           true,
 		Commands: []*cli.Command{
-			cmd.NewVersionCommand().ToCLI(),
+			commands.NewVersionCommand().ToCLI(),
+			registry.New().ToCLI(),
+		},
+		ExitErrHandler: func(ctx context.Context, c *cli.Command, err error) {
+			cli.HandleExitCoder(err)
+			commands.Fprintf(c.ErrWriter, "Error: %+v\n", err)
+			os.Exit(1)
 		},
 	}
-	if err := app.Run(context.Background(), os.Args); err != nil {
-		log.Fatal(err)
-	}
+	//nolint:errcheck // already checked in root command ExitErrHandler
+	_ = app.Run(context.Background(), os.Args)
 }

@@ -69,7 +69,9 @@ func (auth AuthConfig) MarshalJSON() ([]byte, error) {
 	type authConfig AuthConfig
 
 	shadow := authConfig(auth)
-	shadow.Auth = EncodeAuth(shadow.Username, shadow.Password)
+	if shadow.Username != "" && shadow.Password != "" {
+		shadow.Auth = EncodeAuth(shadow.Username, shadow.Password)
+	}
 	return json.Marshal(shadow)
 }
 

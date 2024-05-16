@@ -14,8 +14,8 @@ import (
 var (
 	defaultRegistryAliases = map[string][]string{
 		DefaultRegistry: {
-			"index.docker.io",
-			"docker.io",
+			DockerIOHostname,
+			DockerIndexHostname,
 		},
 	}
 

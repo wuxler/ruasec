@@ -2,6 +2,7 @@ package name
 
 import (
 	"fmt"
+	stdurl "net/url"
 	"strings"
 
 	"github.com/opencontainers/go-digest"
@@ -19,6 +20,15 @@ const (
 	// DefaultTag is the tag name that will be used if no tag provided and the
 	// default is not overridden.
 	DefaultTag = "latest"
+
+	// DockerIOHostname is the hostname of DockerHub server.
+	DockerIOHostname = "docker.io"
+
+	// IndexHostname is the index hostname of DockerHub server.
+	DockerIndexHostname = "index.docker.io"
+
+	// DockerIndexServer is used for user auth and image search.
+	DockerIndexServer = "https://" + DockerIndexHostname + "/v1/"
 )
 
 // Registry is a reference to a registry domain. A Registry has both scheme
@@ -155,4 +165,21 @@ func Namespace(path string) string {
 		return DefaultNamespace
 	}
 	return path[:i]
+}
+
+// Hostname trys to parse the hostname from the given address.
+func Hostname(addr string) string {
+	if addr == "" {
+		return addr
+	}
+	if !strings.Contains(addr, "://") {
+		addr = "dump://" + addr
+	}
+	if url, err := stdurl.Parse(addr); err == nil {
+		return url.Host
+	}
+	idx := strings.Index(addr, "://")
+	stripped := addr[idx+3:]
+	hostname, _, _ := strings.Cut(stripped, "/")
+	return hostname
 }

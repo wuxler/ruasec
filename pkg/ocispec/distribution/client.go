@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/wuxler/ruasec/pkg/appinfo"
+	"github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
 	"github.com/wuxler/ruasec/pkg/util/xcache"
 	"github.com/wuxler/ruasec/pkg/util/xio"
@@ -98,6 +99,29 @@ type Client struct {
 
 	// TokenOptions is the options to fetch token for authorization.
 	TokenOptions TokenOptions
+}
+
+func (c *Client) NewRegistry(addr string) (*RegistryClient, error) {
+	return c.NewRegistryWithContext(context.Background(), addr)
+}
+
+func (c *Client) NewRegistryWithContext(ctx context.Context, addr string) (*RegistryClient, error) {
+	registryName, err := name.NewRegistry(addr)
+	if err != nil {
+		return nil, err
+	}
+	if registryName.Scheme() == "" {
+		scheme, err := c.detectScheme(ctx, addr)
+		if err != nil {
+			return nil, err
+		}
+		registryName = registryName.WithScheme(scheme)
+	}
+	registryClient := &RegistryClient{
+		HTTPClient: c,
+		registry:   registryName,
+	}
+	return registryClient, nil
 }
 
 // Do performs an HTTP request and returns an HTTP response with additinal processes like
@@ -400,4 +424,26 @@ func (c *Client) fetchTokenWithBasic(ctx context.Context, auth authn.AuthConfig,
 		token.IssuedAt = time.Now().UTC()
 	}
 	return token, nil
+}
+
+func (c *Client) detectScheme(ctx context.Context, addr string) (string, error) {
+	host, scheme, err := parseHostScheme(addr)
+	if err != nil {
+		return "", err
+	}
+	if scheme != "" {
+		return scheme, nil
+	}
+	schemes := []string{"https", "http"}
+	primary := &schemePinger{client: c.client(), host: host, scheme: schemes[0]}
+	fallback := &schemePinger{client: c.client(), host: host, scheme: schemes[1]}
+	isPrimary, err := pingParallel(ctx, primary, fallback)
+	if err != nil {
+		return "", err
+	}
+	detected := schemes[0]
+	if !isPrimary {
+		detected = schemes[1]
+	}
+	return detected, nil
 }

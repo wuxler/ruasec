@@ -34,17 +34,6 @@ var (
 	}
 )
 
-func NewRegistryClient(registry name.Registry, client *Client) *RegistryClient {
-	if client == nil {
-		client = DefaultClient
-	}
-	s := &RegistryClient{
-		registry:   registry,
-		HTTPClient: client,
-	}
-	return s
-}
-
 type RegistryClient struct {
 	HTTPClient *Client
 	registry   name.Registry
