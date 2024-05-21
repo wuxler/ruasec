@@ -14,6 +14,7 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/credentials"
 )
 
+// NewLogoutCommand returns a LogoutCommand with default values.
 func NewLogoutCommand(registryCmd *RegistryCommand) *LogoutCommand {
 	return &LogoutCommand{
 		RegistryCommand: registryCmd,
@@ -21,11 +22,13 @@ func NewLogoutCommand(registryCmd *RegistryCommand) *LogoutCommand {
 	}
 }
 
+// LogoutCommand used to remove the credentials from the local auth file.
 type LogoutCommand struct {
 	*RegistryCommand
 	AuthFile string `json:"auth_file,omitempty" yaml:"auth_file,omitempty"`
 }
 
+// ToCLI transforms to a *cli.Command.
 func (c *LogoutCommand) ToCLI() *cli.Command {
 	return &cli.Command{
 		Name:  "logout",
@@ -41,6 +44,7 @@ $ rua registry logout registry.example.com
 	}
 }
 
+// Flags defines the flags related to the current command.
 func (c *LogoutCommand) Flags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
@@ -53,6 +57,7 @@ func (c *LogoutCommand) Flags() []cli.Flag {
 	}
 }
 
+// Run is the main function for the current command
 func (c *LogoutCommand) Run(ctx context.Context, cmd *cli.Command) error {
 	authFile := authfile.NewAuthFile(c.AuthFile)
 	if err := authFile.Load(); err != nil {

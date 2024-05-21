@@ -14,9 +14,9 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/authfile"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/credentials"
-	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
 )
 
+// NewLoginCommand returns a LoginCommand with default values.
 func NewLoginCommand(registryCmd *RegistryCommand) *LoginCommand {
 	return &LoginCommand{
 		RegistryCommand: registryCmd,
@@ -24,6 +24,7 @@ func NewLoginCommand(registryCmd *RegistryCommand) *LoginCommand {
 	}
 }
 
+// LoginCommand used to login remote registry.
 type LoginCommand struct {
 	*RegistryCommand
 
@@ -33,6 +34,7 @@ type LoginCommand struct {
 	AuthFile      string `json:"auth_file,omitempty" yaml:"auth_file,omitempty"`
 }
 
+// ToCLI tranforms to a *cli.Command.
 func (c *LoginCommand) ToCLI() *cli.Command {
 	return &cli.Command{
 		Name:  "login",
@@ -58,6 +60,7 @@ $ rua registry login --insecure registry.example.com
 	}
 }
 
+// Flags defines the flags related to the current command.
 func (c *LoginCommand) Flags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
@@ -130,7 +133,10 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 	if err := authFile.Load(); err != nil {
 		commands.Fprintf(cmd.Writer, "Warning: Failed to load auth file: %s", err)
 	}
-	client := &distribution.Client{}
+	client, err := c.NewClient()
+	if err != nil {
+		return err
+	}
 
 	if c.Password == "" && c.Username == "" {
 		// try to login with the crendetial found in default auth files
