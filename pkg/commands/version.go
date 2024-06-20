@@ -6,6 +6,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/wuxler/ruasec/pkg/appinfo"
+	"github.com/wuxler/ruasec/pkg/cmdhelper"
 )
 
 // NewVersionCommand returns a version command.
@@ -27,7 +28,7 @@ func (c *VersionCommand) ToCLI() *cli.Command {
 		Name:   "version",
 		Usage:  "Show version",
 		Flags:  c.Flags(),
-		Before: cli.BeforeFunc(NoArgs()),
+		Before: cli.BeforeFunc(cmdhelper.NoArgs()),
 		Action: c.Run,
 	}
 }

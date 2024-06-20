@@ -16,7 +16,7 @@ tasks:
   build:
     desc: Build the application
     sources:
-      - ./cmd/rua/**/*.go
+      - ./**/*.go
     cmds:
       - go build -o {{.OUTPUT}}/rua{{exeExt}} ./cmd/rua
 

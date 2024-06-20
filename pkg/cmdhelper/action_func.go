@@ -1,10 +1,9 @@
-// Package commands provides common methods or types to help to build cli commands.
-package commands
+// Package cmdhelper provides common methods or types to help to build cli commands.
+package cmdhelper
 
 import (
 	"context"
 	"fmt"
-	"io"
 
 	"github.com/urfave/cli/v3"
 )
@@ -66,12 +65,4 @@ func NoArgs() ActionFunc {
 		}
 		return nil
 	}
-}
-
-// Fprintf is a wrapper around fmt.Fprintf to suppress the error check.
-func Fprintf(w io.Writer, format string, args ...any) {
-	if format[len(format)-1] != '\n' {
-		format += "\n"
-	}
-	_, _ = fmt.Fprintf(w, format, args...)
 }

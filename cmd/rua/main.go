@@ -7,6 +7,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands"
 	"github.com/wuxler/ruasec/pkg/commands/registry"
 )
@@ -28,7 +29,7 @@ func main() {
 		},
 		ExitErrHandler: func(ctx context.Context, c *cli.Command, err error) {
 			cli.HandleExitCoder(err)
-			commands.Fprintf(c.ErrWriter, "Error: %+v\n", err)
+			cmdhelper.Fprintf(c.ErrWriter, "Error: %+v\n", err)
 			os.Exit(1)
 		},
 	}

@@ -183,3 +183,36 @@ func Hostname(addr string) string {
 	hostname, _, _ := strings.Cut(stripped, "/")
 	return hostname
 }
+
+// IsTagged checks whether the ref is a tagged reference implementation.
+func IsTagged(ref Reference) (Tagged, bool) {
+	tagged, ok := ref.(Tagged)
+	return tagged, ok
+}
+
+// IsDigested checks whether the ref is a digested reference implementation.
+func IsDigested(ref Reference) (Digested, bool) {
+	digested, ok := ref.(Digested)
+	return digested, ok
+}
+
+// Identify returns the identity of the ref and returns the tag or digest when the
+// ref is valid.
+func Identify(ref Reference) (string, error) {
+	if digested, ok := IsDigested(ref); ok {
+		return digested.Digest().String(), nil
+	}
+	if tagged, ok := IsTagged(ref); ok {
+		return tagged.Tag(), nil
+	}
+	return "", newErrInvalidReference("must be tagged or digested reference: %s", ref)
+}
+
+// MustIdentify wraps Identify with error panic.
+func MustIdentify(ref Reference) string {
+	identity, err := Identify(ref)
+	if err != nil {
+		panic(err)
+	}
+	return identity
+}

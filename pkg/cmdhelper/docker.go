@@ -1,4 +1,4 @@
-package commands
+package cmdhelper
 
 import (
 	"context"
@@ -11,8 +11,8 @@ import (
 	"github.com/wuxler/ruasec/pkg/util/homedir"
 )
 
-// DefaultAuthFile returns the default auth config file path.
-func DefaultAuthFile() string {
+// DefaultDockerAuthFile returns the default auth config file path.
+func DefaultDockerAuthFile() string {
 	dockerConfigDir := os.Getenv("DOCKER_CONFIG")
 	if dockerConfigDir == "" {
 		dockerConfigDir = filepath.Join(homedir.MustGet(), ".docker")
@@ -20,8 +20,8 @@ func DefaultAuthFile() string {
 	return filepath.Join(dockerConfigDir, "config.json")
 }
 
-// ElectServerAddress returns the default registry to use when address is not specified.
-func ElectServerAddress(ctx context.Context, cmd *cli.Command, address string) (string, bool) {
+// ElectDockerServerAddress returns the default registry to use when address is not specified.
+func ElectDockerServerAddress(ctx context.Context, cmd *cli.Command, address string) (string, bool) {
 	if address == "" {
 		Fprintf(cmd.Writer, "No registry server address specified, default to DockerHub(%s)", name.DockerIOHostname)
 		address = name.DockerIOHostname

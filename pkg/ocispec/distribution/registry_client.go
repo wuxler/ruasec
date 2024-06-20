@@ -59,7 +59,9 @@ func (c *RegistryClient) Ping(ctx context.Context) error {
 	return HTTPSuccess(resp, route.SuccessCodes...)
 }
 
-func (c *RegistryClient) getManifest(ctx context.Context, repo string, tagOrDigest string) (DescribableReadCloser, error) {
+// GetManifest returns the contents of the manifest with the given tag or digest.
+// The context also controls the lifetime of the returned DescribableReadCloser.
+func (c *RegistryClient) GetManifest(ctx context.Context, repo string, tagOrDigest string) (DescribableReadCloser, error) {
 	ctx = authn.WithScopes(ctx, authn.RepositoryScope(repo, authn.ActionPull))
 	route := RouteManifestsGet
 	request, err := c.builder().WithName(repo).WithReference(tagOrDigest).BuildRequest(ctx, route)
@@ -83,18 +85,6 @@ func (c *RegistryClient) getManifest(ctx context.Context, repo string, tagOrDige
 		return nil, err
 	}
 	return NewDescribableReadCloser(resp.Body, desc), nil
-}
-
-// GetManifest returns the contents of the manifest with the given digest.
-// The context also controls the lifetime of the returned DescribableReadCloser.
-func (c *RegistryClient) GetManifest(ctx context.Context, repo string, dgst digest.Digest) (DescribableReadCloser, error) {
-	return c.getManifest(ctx, repo, dgst.String())
-}
-
-// GetTag returns the contents of the manifest with the given tag.
-// The context also controls the lifetime of the returned DescribableReadCloser.
-func (c *RegistryClient) GetTag(ctx context.Context, repo string, tag string) (DescribableReadCloser, error) {
-	return c.getManifest(ctx, repo, tag)
 }
 
 func (c *RegistryClient) headManifest(ctx context.Context, repo string, tagOrDigest string) (v1.Descriptor, error) {

@@ -24,6 +24,7 @@ func FromContext(ctx context.Context) *Logger {
 }
 
 // WithContext injects a Logger into context.Context and returns a new child context.Context
-func WithContext(ctx context.Context, logger *Logger, args ...any) context.Context {
+func WithContext(ctx context.Context, args ...any) context.Context {
+	logger := FromContext(ctx)
 	return context.WithValue(ctx, contextKey{}, logger.With(args...))
 }

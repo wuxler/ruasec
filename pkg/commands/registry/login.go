@@ -10,28 +10,27 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli/v3"
 
-	"github.com/wuxler/ruasec/pkg/commands"
+	"github.com/wuxler/ruasec/pkg/cmdhelper"
+	"github.com/wuxler/ruasec/pkg/commands/internal/options"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/authfile"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/credentials"
 )
 
 // NewLoginCommand returns a LoginCommand with default values.
-func NewLoginCommand(registryCmd *RegistryCommand) *LoginCommand {
+func NewLoginCommand() *LoginCommand {
 	return &LoginCommand{
-		RegistryCommand: registryCmd,
-		AuthFile:        commands.DefaultAuthFile(),
+		RemoteRegistryOptions: options.NewRemoteRegistryOptions(),
 	}
 }
 
 // LoginCommand used to login remote registry.
 type LoginCommand struct {
-	*RegistryCommand
+	*options.RemoteRegistryOptions
 
 	Username      string `json:"username,omitempty" yaml:"username,omitempty"`
 	Password      string `json:"password,omitempty" yaml:"password,omitempty"`
 	PasswordStdin bool   `json:"password_stdin,omitempty" yaml:"password_stdin,omitempty"`
-	AuthFile      string `json:"auth_file,omitempty" yaml:"auth_file,omitempty"`
 }
 
 // ToCLI tranforms to a *cli.Command.
@@ -62,7 +61,7 @@ $ rua registry login --insecure registry.example.com
 
 // Flags defines the flags related to the current command.
 func (c *LoginCommand) Flags() []cli.Flag {
-	return []cli.Flag{
+	local := []cli.Flag{
 		&cli.StringFlag{
 			Name:        "username",
 			Aliases:     []string{"u"},
@@ -86,20 +85,14 @@ func (c *LoginCommand) Flags() []cli.Flag {
 			Destination: &c.PasswordStdin,
 			Value:       c.PasswordStdin,
 		},
-		&cli.StringFlag{
-			Name:        "auth-file",
-			Usage:       "registry auth file path",
-			Sources:     cli.EnvVars("RUA_REGISTRY_AUTH_FILE"),
-			Destination: &c.AuthFile,
-			Value:       c.AuthFile,
-		},
 	}
+	return append(c.RemoteRegistryOptions.Flags(), local...)
 }
 
 // Validate validates commands flags.
 func (c *LoginCommand) Validate(ctx context.Context, cmd *cli.Command) error {
 	if c.Password != "" {
-		commands.Fprintf(cmd.Writer, "Warning: Using --password via the CLI is insecure. Use --password-stdin instead")
+		cmdhelper.Fprintf(cmd.Writer, "Warning: Using --password via the CLI is insecure. Use --password-stdin instead")
 		if c.PasswordStdin {
 			return errors.New("--password and --password-stdin are mutually exclusive")
 		}
@@ -122,36 +115,37 @@ func (c *LoginCommand) Run(ctx context.Context, cmd *cli.Command) error {
 	if err := c.run(ctx, cmd); err != nil {
 		return err
 	}
-	commands.Fprintf(cmd.Writer, "Login succeeded")
+	cmdhelper.Fprintf(cmd.Writer, "Login succeeded")
 	return nil
 }
 
 func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
-	serverAddress, _ := commands.ElectServerAddress(ctx, cmd, cmd.Args().First())
+	serverAddress, _ := cmdhelper.ElectDockerServerAddress(ctx, cmd, cmd.Args().First())
 
 	authFile := authfile.NewAuthFile(c.AuthFile)
 	if err := authFile.Load(); err != nil {
-		commands.Fprintf(cmd.Writer, "Warning: Failed to load auth file: %s", err)
+		cmdhelper.Fprintf(cmd.Writer, "Warning: Failed to load auth file: %s", err)
 	}
-	client, err := c.NewClient()
+	client, err := c.NewDistributionClient()
 	if err != nil {
 		return err
 	}
 
 	if c.Password == "" && c.Username == "" {
 		// try to login with the crendetial found in default auth files
-		if authConfig, err := authFile.Get(ctx, serverAddress); err == nil && authConfig != authn.EmptyAuthConfig {
-			commands.Fprintf(cmd.Writer, "Authenticating with existing credentials ...")
-			client.AuthProvider = func(_ context.Context, _ string) authn.AuthConfig {
-				return authConfig
+		client.AuthProvider = func(ctx context.Context, host string) authn.AuthConfig {
+			authConfig, err := authFile.Get(ctx, host)
+			if err == nil && authConfig != authn.EmptyAuthConfig {
+				cmdhelper.Fprintf(cmd.Writer, "Authenticating with existing credentials ...")
 			}
-			registryClient, err := client.NewRegistryWithContext(ctx, serverAddress)
-			if err != nil {
-				return err
-			}
-			if err := registryClient.Ping(ctx); err == nil {
-				return nil
-			}
+			return authConfig
+		}
+		registryClient, err := client.NewRegistryWithContext(ctx, serverAddress)
+		if err != nil {
+			return err
+		}
+		if err := registryClient.Ping(ctx); err == nil {
+			return nil
 		}
 	}
 
@@ -161,7 +155,6 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 	}
-
 	authConfig := authn.AuthConfig{
 		Username: c.Username,
 		Password: c.Password,
@@ -177,7 +170,7 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	// store the validate credential
-	commands.Fprintf(cmd.Writer, "Warning: Your password will be stored unencryped in %s", c.AuthFile)
+	cmdhelper.Fprintf(cmd.Writer, "Warning: Your password will be stored unencryped in %s", c.AuthFile)
 	store := credentials.NewFileStore(authFile)
 	if err := store.Store(ctx, serverAddress, authConfig); err != nil {
 		return err

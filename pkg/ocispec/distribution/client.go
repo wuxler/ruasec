@@ -8,14 +8,17 @@ import (
 	"io"
 	"net/http"
 	stdurl "net/url"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/wuxler/ruasec/pkg/appinfo"
 	"github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
+	"github.com/wuxler/ruasec/pkg/ocispec/authn/authfile"
 	"github.com/wuxler/ruasec/pkg/util/xcache"
 	"github.com/wuxler/ruasec/pkg/util/xio"
+	"github.com/wuxler/ruasec/pkg/xlog"
 )
 
 var (
@@ -39,12 +42,35 @@ var (
 	// See: https://distribution.github.io/distribution/spec/auth/token/
 	maxAuthResponseBytes int64 = 128 * 1024 // 128 KiB
 
-	discardChallengeCache = xcache.NewDiscard[authn.Challenge]()
-	discardTokenCache     = xcache.NewDiscard[authn.Token]()
+	defaultChallengeCache = xcache.NewDiscard[authn.Challenge]()
+	defaultTokenCache     = xcache.NewDiscard[authn.Token]()
 )
 
 // AuthProvider provides the AuthConfig related to the registry.
 type AuthProvider func(ctx context.Context, host string) authn.AuthConfig
+
+// NewAuthProviderFromAuthFile returns an AuthProvider with the *authfile.AuthFile provided.
+func NewAuthProviderFromAuthFile(authFile *authfile.AuthFile) AuthProvider {
+	return func(ctx context.Context, host string) authn.AuthConfig {
+		authConfig, err := authFile.Get(ctx, host)
+		if err != nil {
+			xlog.C(ctx).Warnf("failed to get auth config for host %s: %v", host, err)
+		}
+		return authConfig
+	}
+}
+
+// NewAuthProviderFromAuthFilePath returns an AuthProvider with the auth file path provided.
+// It will ignore the file load error when the path is not existed.
+func NewAuthProviderFromAuthFilePath(path string) (AuthProvider, error) {
+	authFile := authfile.NewAuthFile(path)
+	if err := authFile.Load(); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("failed to load auth file: %w", err)
+		}
+	}
+	return NewAuthProviderFromAuthFile(authFile), nil
+}
 
 // ChallengeCache is the cache for the Challenge related to the registry.
 type ChallengeCache = xcache.Cache[authn.Challenge]
@@ -208,14 +234,14 @@ func (c *Client) challengeCache() ChallengeCache {
 	if c.ChallengeCache != nil {
 		return c.ChallengeCache
 	}
-	return discardChallengeCache
+	return defaultChallengeCache
 }
 
 func (c *Client) tokenCache() TokenCache {
 	if c.TokenCache != nil {
 		return c.TokenCache
 	}
-	return discardTokenCache
+	return defaultTokenCache
 }
 
 func (c *Client) challengeCacheKey(request *http.Request) string {
