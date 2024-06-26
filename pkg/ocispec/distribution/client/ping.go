@@ -1,4 +1,4 @@
-package distribution
+package client
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 	"github.com/wuxler/ruasec/pkg/xlog"
 )
@@ -141,7 +142,7 @@ func (p *schemePinger) Ping(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("failed to do request to %s %s: %w", req.Method, req.URL, err)
 	}
 	defer xio.CloseAndSkipError(resp.Body)
-	if err := HTTPSuccess(resp, http.StatusUnauthorized); err != nil {
+	if err := distribution.HTTPSuccess(resp, http.StatusUnauthorized); err != nil {
 		return false, err
 	}
 	return true, nil

@@ -217,7 +217,7 @@ var (
 	routePathValidateRegex   = regexp.MustCompile(routePathValidatePattern)
 )
 
-type routeBuilder struct {
+type RouteBuilder struct {
 	BaseURL   string
 	Name      string
 	Reference string
@@ -226,37 +226,37 @@ type routeBuilder struct {
 	Body      io.Reader
 }
 
-func (rb *routeBuilder) WithBaseURL(base string) *routeBuilder {
+func (rb *RouteBuilder) WithBaseURL(base string) *RouteBuilder {
 	rb.BaseURL = base
 	return rb
 }
 
-func (rb *routeBuilder) WithName(name string) *routeBuilder {
+func (rb *RouteBuilder) WithName(name string) *RouteBuilder {
 	rb.Name = name
 	return rb
 }
 
-func (rb *routeBuilder) WithReference(reference string) *routeBuilder {
+func (rb *RouteBuilder) WithReference(reference string) *RouteBuilder {
 	rb.Reference = reference
 	return rb
 }
 
-func (rb *routeBuilder) WithDigest(dgst digest.Digest) *routeBuilder {
+func (rb *RouteBuilder) WithDigest(dgst digest.Digest) *RouteBuilder {
 	rb.Digest = dgst
 	return rb
 }
 
-func (rb *routeBuilder) WithSessionID(sessionID string) *routeBuilder {
+func (rb *RouteBuilder) WithSessionID(sessionID string) *RouteBuilder {
 	rb.SessionID = sessionID
 	return rb
 }
 
-func (rb *routeBuilder) WithBody(body io.Reader) *routeBuilder {
+func (rb *RouteBuilder) WithBody(body io.Reader) *RouteBuilder {
 	rb.Body = body
 	return rb
 }
 
-func (rb *routeBuilder) BuildPath(route RouteDescriptor) (string, error) {
+func (rb *RouteBuilder) BuildPath(route RouteDescriptor) (string, error) {
 	path := route.PathPattern
 	// replace known path params
 	replacements := map[string]string{
@@ -276,7 +276,7 @@ func (rb *routeBuilder) BuildPath(route RouteDescriptor) (string, error) {
 	return path, nil
 }
 
-func (rb *routeBuilder) MustBuildPath(route RouteDescriptor) string {
+func (rb *RouteBuilder) MustBuildPath(route RouteDescriptor) string {
 	path, err := rb.BuildPath(route)
 	if err != nil {
 		panic(err)
@@ -284,7 +284,7 @@ func (rb *routeBuilder) MustBuildPath(route RouteDescriptor) string {
 	return path
 }
 
-func (rb *routeBuilder) BuildRequest(ctx context.Context, route RouteDescriptor) (*http.Request, error) {
+func (rb *RouteBuilder) BuildRequest(ctx context.Context, route RouteDescriptor) (*http.Request, error) {
 	routePath, err := rb.BuildPath(route)
 	if err != nil {
 		return nil, err

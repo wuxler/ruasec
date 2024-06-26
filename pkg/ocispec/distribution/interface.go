@@ -28,7 +28,7 @@ import (
 	"io"
 
 	"github.com/opencontainers/go-digest"
-	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/wuxler/ruasec/pkg/util/xgeneric/iter"
 )
@@ -41,21 +41,13 @@ type Pinger interface {
 
 // Reader defines registry read actions for blobs, manifests, and other resources.
 type Reader interface {
-	// GetManifest returns the contents of the manifest with the given digest.
-	// The context also controls the lifetime of the returned ContentReadCloser.
+	// GetManifest returns the contents of the manifest with the given tag or digest.
+	// The context also controls the lifetime of the returned DescribableReadCloser.
 	//
 	// Errors:
 	// 	- ErrNameUnknown when the repository is not present.
 	// 	- ErrManifestUnknown when the blob is not present in the repository.
-	GetManifest(ctx context.Context, repo string, dgst digest.Digest) (DescribableReadCloser, error)
-
-	// GetTag returns the contents of the manifest with the given tag.
-	// The context also controls the lifetime of the returned ContentReadCloser.
-	//
-	// Errors:
-	// 	- ErrNameUnknown when the repository is not present.
-	// 	- ErrManifestUnknown when the tag is not present in the repository.
-	GetTag(ctx context.Context, repo string, tag string) (DescribableReadCloser, error)
+	GetManifest(ctx context.Context, repo string, tagOrDigest string) (DescribableReadCloser, error)
 
 	// StatManifest returns the descriptor for a given maniifest.
 	// Only the MediaType, dgst and Size fields will be filled out.
@@ -63,15 +55,7 @@ type Reader interface {
 	// Errors:
 	// 	- ErrNameUnknown when the repository is not present.
 	// 	- ErrManifestUnknown when the blob is not present in the repository.
-	StatManifest(ctx context.Context, repo string, dgst digest.Digest) (v1.Descriptor, error)
-
-	// StatTag returns the descriptor for a given tag.
-	// Only the MediaType, dgst and Size fields will be filled out.
-	//
-	// Errors:
-	// 	- ErrNameUnknown when the repository is not present.
-	// 	- ErrManifestUnknown when the blob is not present in the repository.
-	StatTag(ctx context.Context, repo string, tag string) (v1.Descriptor, error)
+	StatManifest(ctx context.Context, repo string, tagOrDigest string) (imgspecv1.Descriptor, error)
 
 	// StatBlob returns the descriptor for a given blob digest.
 	// Only the MediaType, dgst and Size fields will be filled out.
@@ -79,10 +63,10 @@ type Reader interface {
 	// Errors:
 	// 	- ErrNameUnknown when the repository is not present.
 	// 	- ErrBlobUnknown when the blob is not present in the repository.
-	StatBlob(ctx context.Context, repo string, dgst digest.Digest) (v1.Descriptor, error)
+	StatBlob(ctx context.Context, repo string, dgst digest.Digest) (imgspecv1.Descriptor, error)
 
 	// GetBlob returns the content of the blob with the given digest.
-	// The context also controls the lifetime of the returned ContentReadCloser.
+	// The context also controls the lifetime of the returned DescribableReadCloser.
 	//
 	// Errors:
 	// 	- ErrNameUnknown when the repository is not present.
@@ -93,7 +77,7 @@ type Reader interface {
 	// starting at "start" offset, up to but not including "end" offset.
 	// If "end" offset is negative or exceeds the actual size of the blob, GetBlobRange will
 	// return all the data starting from "start" offset.
-	// The context also controls the lifetime of the returned ContentReadCloser.
+	// The context also controls the lifetime of the returned DescribableReadCloser.
 	GetBlobRange(ctx context.Context, repo string, dgst digest.Digest, start, end int64) (DescribableReadCloser, error)
 }
 
@@ -108,7 +92,7 @@ type Writer interface {
 	// 	- ErrNameInvalid when the repository name is not valid.
 	// 	- ErrDigestInvalid when desc.Digest does not match the content.
 	// 	- ErrSizeInvalid when desc.Size does not match the content length.
-	PushBlob(ctx context.Context, repo string, desc v1.Descriptor, r io.Reader) (v1.Descriptor, error)
+	PushBlob(ctx context.Context, repo string, desc imgspecv1.Descriptor, r io.Reader) (imgspecv1.Descriptor, error)
 
 	// PushBlobChunked starts to push a blob to the given repository.
 	// The returned [WriteCloser] can be used to stream the upload and resume on temporary errors.
@@ -146,13 +130,14 @@ type Writer interface {
 	// so to return a correctly populated descriptor, a client will need to make
 	// an extra HTTP call to find that out. For now, we'll just say that
 	// the descriptor returned from MountBlob might have a zero Size.
-	MountBlob(ctx context.Context, fromRepo, toRepo string, dgst digest.Digest) (v1.Descriptor, error)
+	MountBlob(ctx context.Context, fromRepo, toRepo string, dgst digest.Digest) (imgspecv1.Descriptor, error)
 
 	// PushManifest pushes a manifest with the given media type and contents.
+	// If mediaType is not specified, "application/octet-stream" is used.
 	// If tag is non-empty, the tag with that name will be pointed at the manifest.
 	//
 	// It returns a descriptor suitable for accessing the manifest.
-	PushManifest(ctx context.Context, repo string, tag string, contents []byte, mediaType string) (v1.Descriptor, error)
+	PushManifest(ctx context.Context, repo string, tag string, content []byte, mediaType string) (imgspecv1.Descriptor, error)
 }
 
 // Deleter defines registry delete actions that for blobs, manifests and other resources.
@@ -190,7 +175,7 @@ type Lister interface {
 	// only manifests with that type.
 	//
 	// FIXME(wuxler): is it possible to ask for multiple artifact types?
-	Referrers(ctx context.Context, repo string, dgst digest.Digest, artifactType string) iter.Seq[v1.Descriptor]
+	Referrers(ctx context.Context, repo string, dgst digest.Digest, artifactType string) iter.Seq[imgspecv1.Descriptor]
 }
 
 // BlobWriteCloser provides a handle for uploading a blob to a registry.
@@ -219,7 +204,7 @@ type BlobWriteCloser interface {
 
 	// Commit completes the blob writer process. The content is verified
 	// against the provided digest, and a canonical descriptor for it is returned.
-	Commit(digest digest.Digest) (v1.Descriptor, error)
+	Commit(digest digest.Digest) (imgspecv1.Descriptor, error)
 
 	// Cancel ends the blob write without storing any data and frees any
 	// associated resources. Any data written thus far will be lost. Cancel

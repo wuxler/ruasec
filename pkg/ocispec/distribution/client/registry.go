@@ -1,26 +1,21 @@
-package distribution
+package client
 
 import (
+	"bytes"
 	"context"
-	"errors"
 	"fmt"
-	"mime"
 	"net/http"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/opencontainers/go-digest"
-	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/wuxler/ruasec/pkg/image/manifest"
 	"github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
+	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
 	"github.com/wuxler/ruasec/pkg/util/xio"
-)
-
-const (
-	dockerContentDigestHeader = "Docker-Content-Digest"
 )
 
 var (
@@ -34,19 +29,19 @@ var (
 	}
 )
 
-type RegistryClient struct {
-	HTTPClient *Client
+type Registry struct {
+	HTTPClient *Factory
 	registry   name.Registry
 }
 
-func (c *RegistryClient) builder() *routeBuilder {
-	b := &routeBuilder{}
+func (c *Registry) builder() *distribution.RouteBuilder {
+	b := &distribution.RouteBuilder{}
 	return b.WithBaseURL(fmt.Sprintf("%s://%s", c.registry.Scheme(), c.registry.Hostname()))
 }
 
 // Ping checks if the storage is reachable.
-func (c *RegistryClient) Ping(ctx context.Context) error {
-	route := RoutePing
+func (c *Registry) Ping(ctx context.Context) error {
+	route := distribution.RoutePing
 	request, err := c.builder().BuildRequest(ctx, route)
 	if err != nil {
 		return err
@@ -56,14 +51,14 @@ func (c *RegistryClient) Ping(ctx context.Context) error {
 		return err
 	}
 	defer xio.CloseAndSkipError(resp.Body)
-	return HTTPSuccess(resp, route.SuccessCodes...)
+	return distribution.HTTPSuccess(resp, route.SuccessCodes...)
 }
 
 // GetManifest returns the contents of the manifest with the given tag or digest.
 // The context also controls the lifetime of the returned DescribableReadCloser.
-func (c *RegistryClient) GetManifest(ctx context.Context, repo string, tagOrDigest string) (DescribableReadCloser, error) {
+func (c *Registry) GetManifest(ctx context.Context, repo string, tagOrDigest string) (distribution.DescribableReadCloser, error) {
 	ctx = authn.WithScopes(ctx, authn.RepositoryScope(repo, authn.ActionPull))
-	route := RouteManifestsGet
+	route := distribution.RouteManifestsGet
 	request, err := c.builder().WithName(repo).WithReference(tagOrDigest).BuildRequest(ctx, route)
 	if err != nil {
 		return nil, err
@@ -73,24 +68,26 @@ func (c *RegistryClient) GetManifest(ctx context.Context, repo string, tagOrDige
 	if err != nil {
 		return nil, err
 	}
-	if err := HTTPSuccess(resp, route.SuccessCodes...); err != nil {
+	if err := distribution.HTTPSuccess(resp, route.SuccessCodes...); err != nil {
 		return nil, err
 	}
 	var dgst digest.Digest
 	if parsed, err := digest.Parse(tagOrDigest); err == nil {
 		dgst = parsed
 	}
-	desc, err := descriptorFromResponse(resp, dgst)
+	desc, err := distribution.DescriptorFromResponse(resp, dgst)
 	if err != nil {
 		return nil, err
 	}
-	return NewDescribableReadCloser(resp.Body, desc), nil
+	return distribution.NewDescribableReadCloser(resp.Body, desc), nil
 }
 
-func (c *RegistryClient) headManifest(ctx context.Context, repo string, tagOrDigest string) (v1.Descriptor, error) {
-	var zero v1.Descriptor
+// StatManifest returns the descriptor for a given tag or digest.
+// Only the MediaType, dgst and Size fields will be filled out.
+func (c *Registry) StatManifest(ctx context.Context, repo string, tagOrDigest string) (imgspecv1.Descriptor, error) {
+	var zero imgspecv1.Descriptor
 	ctx = authn.WithScopes(ctx, authn.RepositoryScope(repo, authn.ActionPull))
-	route := RouteManifestsHead
+	route := distribution.RouteManifestsHead
 	request, err := c.builder().WithName(repo).WithReference(tagOrDigest).BuildRequest(ctx, route)
 	if err != nil {
 		return zero, err
@@ -101,38 +98,80 @@ func (c *RegistryClient) headManifest(ctx context.Context, repo string, tagOrDig
 		return zero, err
 	}
 	defer xio.CloseAndSkipError(resp.Body)
-	if err := HTTPSuccess(resp, route.SuccessCodes...); err != nil {
+	if err := distribution.HTTPSuccess(resp, route.SuccessCodes...); err != nil {
 		return zero, err
 	}
 	var dgst digest.Digest
 	if parsed, err := digest.Parse(tagOrDigest); err == nil {
 		dgst = parsed
 	}
-	desc, err := descriptorFromResponse(resp, dgst)
+	desc, err := distribution.DescriptorFromResponse(resp, dgst)
 	if err != nil {
 		return zero, err
 	}
 	return desc, nil
 }
 
-// StatManifest returns the descriptor for a given maniifest.
-// Only the MediaType, dgst and Size fields will be filled out.
-func (c *RegistryClient) StatManifest(ctx context.Context, repo string, dgst digest.Digest) (v1.Descriptor, error) {
-	return c.headManifest(ctx, repo, dgst.String())
+// DeleteManifest deletes the manifest with the given digest in the given repository.
+func (c *Registry) DeleteManifest(ctx context.Context, repo string, dgst digest.Digest) error {
+	ctx = authn.AppendScopes(ctx, authn.RepositoryScope(repo, authn.ActionDelete))
+	route := distribution.RouteManifestsDelete
+	request, err := c.builder().WithName(repo).WithReference(dgst.String()).BuildRequest(ctx, route)
+	if err != nil {
+		return err
+	}
+	resp, err := c.HTTPClient.Do(request) //nolint:bodyclose // closed by xio.CloseAndSkipError
+	if err != nil {
+		return err
+	}
+	defer xio.CloseAndSkipError(resp.Body)
+	if err := distribution.HTTPSuccess(resp, route.SuccessCodes...); err != nil {
+		return err
+	}
+	return nil
 }
 
-// StatTag returns the descriptor for a given tag.
-// Only the MediaType, dgst and Size fields will be filled out.
-func (c *RegistryClient) StatTag(ctx context.Context, repo string, tag string) (v1.Descriptor, error) {
-	return c.headManifest(ctx, repo, tag)
+// PushManifest pushes a manifest with the given media type and contents.
+// If mediaType is not specified, "application/octet-stream" is used.
+//
+// It returns a descriptor suitable for accessing the manifest.
+func (c *Registry) PushManifest(ctx context.Context, repo string, tag string, content []byte, mediaType string) (imgspecv1.Descriptor, error) {
+	var zero imgspecv1.Descriptor
+	desc := manifest.NewDescriptorFromBytes(mediaType, content)
+	// pushing usually requires both pull and push actions.
+	// Reference: https://github.com/distribution/distribution/blob/v2.7.1/registry/handlers/app.go#L921-L930
+	ctx = authn.AppendScopes(ctx, authn.RepositoryScope(repo, authn.ActionPull, authn.ActionPush))
+	route := distribution.RouteManifestsPut
+	ref := tag
+	if ref == "" {
+		ref = desc.Digest.String()
+	}
+	request, err := c.builder().
+		WithName(repo).
+		WithReference(ref).
+		WithBody(bytes.NewReader(content)).
+		BuildRequest(ctx, route)
+	if err != nil {
+		return zero, err
+	}
+	request.Header.Set("Content-Type", desc.MediaType)
+	resp, err := c.HTTPClient.Do(request) //nolint:bodyclose // closed by xio.CloseAndSkipError
+	if err != nil {
+		return zero, err
+	}
+	defer xio.CloseAndSkipError(resp.Body)
+	if err := distribution.HTTPSuccess(resp, route.SuccessCodes...); err != nil {
+		return zero, err
+	}
+	return desc, nil
 }
 
 // StatBlob returns the descriptor for a given blob digest.
 // Only the MediaType, dgst and Size fields will be filled out.
-func (c *RegistryClient) StatBlob(ctx context.Context, repo string, dgst digest.Digest) (v1.Descriptor, error) {
-	var zero v1.Descriptor
+func (c *Registry) StatBlob(ctx context.Context, repo string, dgst digest.Digest) (imgspecv1.Descriptor, error) {
+	var zero imgspecv1.Descriptor
 	ctx = authn.WithScopes(ctx, authn.RepositoryScope(repo, authn.ActionPull))
-	route := RouteBlobsHead
+	route := distribution.RouteBlobsHead
 	request, err := c.builder().WithName(repo).WithDigest(dgst).BuildRequest(ctx, route)
 	if err != nil {
 		return zero, err
@@ -142,10 +181,10 @@ func (c *RegistryClient) StatBlob(ctx context.Context, repo string, dgst digest.
 		return zero, err
 	}
 	defer xio.CloseAndSkipError(resp.Body)
-	if err := HTTPSuccess(resp, route.SuccessCodes...); err != nil {
+	if err := distribution.HTTPSuccess(resp, route.SuccessCodes...); err != nil {
 		return zero, err
 	}
-	desc, err := descriptorFromResponse(resp, dgst)
+	desc, err := distribution.DescriptorFromResponse(resp, dgst)
 	if err != nil {
 		return zero, err
 	}
@@ -154,9 +193,9 @@ func (c *RegistryClient) StatBlob(ctx context.Context, repo string, dgst digest.
 
 // GetBlob returns the content of the blob with the given digest.
 // The context also controls the lifetime of the returned DescribableReadCloser.
-func (c *RegistryClient) GetBlob(ctx context.Context, repo string, dgst digest.Digest) (DescribableReadCloser, error) {
+func (c *Registry) GetBlob(ctx context.Context, repo string, dgst digest.Digest) (distribution.DescribableReadCloser, error) {
 	ctx = authn.WithScopes(ctx, authn.RepositoryScope(repo, authn.ActionPull))
-	route := RouteBlobsGet
+	route := distribution.RouteBlobsGet
 	request, err := c.builder().WithName(repo).WithDigest(dgst).BuildRequest(ctx, route)
 	if err != nil {
 		return nil, err
@@ -165,20 +204,20 @@ func (c *RegistryClient) GetBlob(ctx context.Context, repo string, dgst digest.D
 	if err != nil {
 		return nil, err
 	}
-	if err := HTTPSuccess(resp, route.SuccessCodes...); err != nil {
+	if err := distribution.HTTPSuccess(resp, route.SuccessCodes...); err != nil {
 		return nil, err
 	}
-	var desc v1.Descriptor
+	var desc imgspecv1.Descriptor
 	if resp.ContentLength == -1 {
 		desc, err = c.StatBlob(ctx, repo, dgst)
 	} else {
-		desc, err = descriptorFromResponse(resp, dgst)
+		desc, err = distribution.DescriptorFromResponse(resp, dgst)
 	}
 	if err != nil {
 		xio.CloseAndSkipError(resp.Body)
 		return nil, err
 	}
-	return NewDescribableReadCloser(resp.Body, desc), nil
+	return distribution.NewDescribableReadCloser(resp.Body, desc), nil
 }
 
 // GetBlobRange is like GetBlob but asks to get only the given range of bytes from the blob,
@@ -186,7 +225,7 @@ func (c *RegistryClient) GetBlob(ctx context.Context, repo string, dgst digest.D
 // If "end" offset is negative or exceeds the actual size of the blob, GetBlobRange will
 // return all the data starting from "start" offset.
 // The context also controls the lifetime of the returned DescribableReadCloser.
-func (c *RegistryClient) GetBlobRange(ctx context.Context, repo string, dgst digest.Digest, start, end int64) (DescribableReadCloser, error) {
+func (c *Registry) GetBlobRange(ctx context.Context, repo string, dgst digest.Digest, start, end int64) (distribution.DescribableReadCloser, error) {
 	if start < 0 {
 		start = 0
 	}
@@ -197,7 +236,7 @@ func (c *RegistryClient) GetBlobRange(ctx context.Context, repo string, dgst dig
 		return nil, fmt.Errorf("invalid range, start offset %d must be less than end offset %d", start, end)
 	}
 	ctx = authn.WithScopes(ctx, authn.RepositoryScope(repo, authn.ActionPull))
-	route := RouteBlobsGet
+	route := distribution.RouteBlobsGet
 	request, err := c.builder().WithName(repo).WithDigest(dgst).BuildRequest(ctx, route)
 	if err != nil {
 		return nil, err
@@ -214,80 +253,18 @@ func (c *RegistryClient) GetBlobRange(ctx context.Context, repo string, dgst dig
 	// allowed with 200 and 206
 	allowedCodes := slices.Clone(route.SuccessCodes)
 	allowedCodes = append(allowedCodes, http.StatusPartialContent)
-	if err := HTTPSuccess(resp, allowedCodes...); err != nil {
+	if err := distribution.HTTPSuccess(resp, allowedCodes...); err != nil {
 		return nil, err
 	}
-	desc, err := descriptorFromResponse(resp, dgst)
+	desc, err := distribution.DescriptorFromResponse(resp, dgst)
 	if err != nil {
 		return nil, err
 	}
-	return NewDescribableReadCloser(resp.Body, desc), nil
+	return distribution.NewDescribableReadCloser(resp.Body, desc), nil
 }
 
-//nolint:gocognit
-func descriptorFromResponse(resp *http.Response, knownDigest digest.Digest) (v1.Descriptor, error) {
-	var zero v1.Descriptor
-	// check Content-Type
-	mediaType, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
-	if err != nil {
-		// FIXME(wuxler): should we handle the error when the Content-Type is invalid ?
-		mediaType = manifest.DefaultMediaType
-	}
-	// check Content-Length
-	var size int64
-	if resp.StatusCode == http.StatusPartialContent {
-		contentRange := resp.Header.Get("Content-Range")
-		if contentRange == "" {
-			return zero, makeError(resp, errors.New("missing 'Content-Range' header in partial content response"))
-		}
-		i := strings.LastIndex(contentRange, "/")
-		if i == -1 {
-			return zero, makeError(resp, fmt.Errorf("invalid 'Content-Range' header: %q", contentRange))
-		}
-		contentSize, err := strconv.ParseInt(contentRange[i+1:], 10, 64)
-		if err != nil {
-			return zero, makeError(resp, fmt.Errorf("invalid 'Content-Range' header: %q", contentRange))
-		}
-		size = contentSize
-	} else {
-		if resp.ContentLength < 0 {
-			return v1.Descriptor{}, makeError(resp, errors.New("missing 'Content-Length' header"))
-		}
-		size = resp.ContentLength
-	}
-
-	// check digest
-	var serverSideDigest digest.Digest
-	if s := resp.Header.Get(dockerContentDigestHeader); s != "" {
-		dgst, err := digest.Parse(s)
-		if err != nil {
-			return zero, makeError(resp, fmt.Errorf("invalid '%s' header: %q: %w", dockerContentDigestHeader, s, err))
-		}
-		serverSideDigest = dgst
-	}
-	if len(knownDigest) > 0 && serverSideDigest != knownDigest {
-		return zero, makeError(resp, fmt.Errorf("digest mismatch: known=%q, server=%q", knownDigest, serverSideDigest))
-	}
-
-	contentDigest := serverSideDigest
-	if len(contentDigest) == 0 {
-		if resp.Request.Method == http.MethodHead {
-			if len(knownDigest) == 0 {
-				return zero, makeError(resp, fmt.Errorf("missing both '%s' header and known digest in HEAD request", dockerContentDigestHeader))
-			}
-		} else {
-			// FIXME(wuxler): should we calculate digest from body here?
-			contentDigest = knownDigest
-		}
-	}
-
-	desc := v1.Descriptor{
-		MediaType: mediaType,
-		Digest:    contentDigest,
-		Size:      size,
-	}
-	return desc, nil
-}
+// // DeleteBlob deletes the blob with the given digest in the given repository.
+// DeleteBlob(ctx context.Context, repo string, dgst digest.Digest) error
 
 func manifestAcceptHeader(mediaTypes ...string) string {
 	if len(mediaTypes) == 0 {

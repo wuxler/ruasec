@@ -1,6 +1,7 @@
 package options
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"net/http"
@@ -9,7 +10,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
-	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
+	"github.com/wuxler/ruasec/pkg/ocispec/distribution/client"
 )
 
 // NewRemoteRegistryOptions returns a *RemoteRegistryOptions with default values.
@@ -61,8 +62,8 @@ func (o *RemoteRegistryOptions) Flags() []cli.Flag {
 	}
 }
 
-// NewDistributionClient returns a new *distribution.Client with options configured.
-func (o *RemoteRegistryOptions) NewDistributionClient() (*distribution.Client, error) {
+// NewDistributionClientFactory returns a client factory with options configured.
+func (o *RemoteRegistryOptions) NewDistributionClientFactory() (*client.Factory, error) {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	// load tls config
 	tlsConfig := &tls.Config{
@@ -79,18 +80,26 @@ func (o *RemoteRegistryOptions) NewDistributionClient() (*distribution.Client, e
 	}
 	tr.TLSClientConfig = tlsConfig
 
-	client := &distribution.Client{
+	factory := &client.Factory{
 		Client: &http.Client{
 			Transport: tr,
 		},
 	}
 
 	if o.AuthFile != "" {
-		authProvider, err := distribution.NewAuthProviderFromAuthFilePath(o.AuthFile)
+		authProvider, err := client.NewAuthProviderFromAuthFilePath(o.AuthFile)
 		if err != nil {
 			return nil, err
 		}
-		client.AuthProvider = authProvider
+		factory.AuthProvider = authProvider
 	}
-	return client, nil
+	return factory, nil
+}
+
+func (o *RemoteRegistryOptions) NewRegistryClient(ctx context.Context, addr string) (*client.Registry, error) {
+	factory, err := o.NewDistributionClientFactory()
+	if err != nil {
+		return nil, err
+	}
+	return factory.NewRegistryWithContext(ctx, addr)
 }

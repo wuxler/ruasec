@@ -5,13 +5,13 @@ import (
 	"io"
 
 	"github.com/opencontainers/go-digest"
-	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 // Describable defines a registry resource that can be described.
 type Describable interface {
 	// Descriptor returns the descriptor for the resource.
-	Descriptor() v1.Descriptor
+	Descriptor() imgspecv1.Descriptor
 }
 
 // DescribableReadCloser provides the contents of a given blob or manifest.
@@ -21,17 +21,17 @@ type DescribableReadCloser interface {
 }
 
 // NewDescribableReadCloser returns a DescribableReadCloser with the descriptor.
-func NewDescribableReadCloser(rc io.ReadCloser, desc v1.Descriptor) DescribableReadCloser {
+func NewDescribableReadCloser(rc io.ReadCloser, desc imgspecv1.Descriptor) DescribableReadCloser {
 	return newDescribableReadCloser(rc, desc, false)
 }
 
 // NewDescribableReadCloserSkipVerify returns a DescribableReadCloser with skip
 // digest and size verification on Read().
-func NewDescribableReadCloserSkipVerify(rc io.ReadCloser, desc v1.Descriptor) DescribableReadCloser {
+func NewDescribableReadCloserSkipVerify(rc io.ReadCloser, desc imgspecv1.Descriptor) DescribableReadCloser {
 	return newDescribableReadCloser(rc, desc, true)
 }
 
-func newDescribableReadCloser(rc io.ReadCloser, desc v1.Descriptor, skipVerify bool) *describableReadCloser {
+func newDescribableReadCloser(rc io.ReadCloser, desc imgspecv1.Descriptor, skipVerify bool) *describableReadCloser {
 	digester := desc.Digest.Algorithm().Digester()
 	teeReader := io.TeeReader(rc, digester.Hash())
 	drc := &describableReadCloser{
@@ -46,7 +46,7 @@ func newDescribableReadCloser(rc io.ReadCloser, desc v1.Descriptor, skipVerify b
 
 type describableReadCloser struct {
 	rc         io.ReadCloser
-	desc       v1.Descriptor
+	desc       imgspecv1.Descriptor
 	skipVerify bool
 	digester   digest.Digester
 	teeReader  io.Reader
@@ -55,7 +55,7 @@ type describableReadCloser struct {
 }
 
 // Descriptor returns the descriptor for the resource.
-func (drc *describableReadCloser) Descriptor() v1.Descriptor {
+func (drc *describableReadCloser) Descriptor() imgspecv1.Descriptor {
 	return drc.desc
 }
 

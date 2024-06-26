@@ -18,6 +18,7 @@ func (c *RegistryCommand) ToCLI() *cli.Command {
 	return &cli.Command{
 		Name:    "registry",
 		Aliases: []string{"reg"},
+		Usage:   "Container registry operations",
 		Commands: []*cli.Command{
 			NewLoginCommand().ToCLI(),
 			NewLogoutCommand().ToCLI(),

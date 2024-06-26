@@ -1,4 +1,4 @@
-package distribution
+package client
 
 import (
 	"context"
@@ -16,6 +16,7 @@ import (
 	"github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/authfile"
+	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
 	"github.com/wuxler/ruasec/pkg/util/xcache"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 	"github.com/wuxler/ruasec/pkg/xlog"
@@ -23,7 +24,7 @@ import (
 
 var (
 	// DefaultClient is the default client with the memory-based cache.
-	DefaultClient = &Client{
+	DefaultClient = &Factory{
 		ChallengeCache: xcache.NewMemory[authn.Challenge](),
 		TokenCache:     xcache.NewMemory[authn.Token](),
 	}
@@ -103,7 +104,7 @@ type TokenOptions struct {
 	OfflineToken bool
 }
 
-type Client struct {
+type Factory struct {
 	// Client is the underlying HTTP client used to access the remote
 	// server. If nil, http.DefaultClient is used.
 	Client *http.Client
@@ -127,11 +128,11 @@ type Client struct {
 	TokenOptions TokenOptions
 }
 
-func (c *Client) NewRegistry(addr string) (*RegistryClient, error) {
+func (c *Factory) NewRegistry(addr string) (*Registry, error) {
 	return c.NewRegistryWithContext(context.Background(), addr)
 }
 
-func (c *Client) NewRegistryWithContext(ctx context.Context, addr string) (*RegistryClient, error) {
+func (c *Factory) NewRegistryWithContext(ctx context.Context, addr string) (*Registry, error) {
 	registryName, err := name.NewRegistry(addr)
 	if err != nil {
 		return nil, err
@@ -143,7 +144,7 @@ func (c *Client) NewRegistryWithContext(ctx context.Context, addr string) (*Regi
 		}
 		registryName = registryName.WithScheme(scheme)
 	}
-	registryClient := &RegistryClient{
+	registryClient := &Registry{
 		HTTPClient: c,
 		registry:   registryName,
 	}
@@ -152,7 +153,7 @@ func (c *Client) NewRegistryWithContext(ctx context.Context, addr string) (*Regi
 
 // Do performs an HTTP request and returns an HTTP response with additinal processes like
 // authenticating the request.
-func (c *Client) Do(request *http.Request) (*http.Response, error) {
+func (c *Factory) Do(request *http.Request) (*http.Response, error) {
 	ctx := request.Context()
 	request.Header = c.expandHeader(request.Header)
 	auth := authn.EmptyAuthConfig
@@ -168,7 +169,7 @@ func (c *Client) Do(request *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := HTTPSuccess(resp, http.StatusUnauthorized); err != nil {
+	if err := distribution.HTTPSuccess(resp, http.StatusUnauthorized); err != nil {
 		xio.CloseAndSkipError(resp.Body)
 		return nil, err
 	}
@@ -194,21 +195,21 @@ func (c *Client) Do(request *http.Request) (*http.Response, error) {
 	return c.client().Do(request)
 }
 
-func (c *Client) client() *http.Client {
+func (c *Factory) client() *http.Client {
 	if c.Client != nil {
 		return c.Client
 	}
 	return http.DefaultClient
 }
 
-func (c *Client) header() http.Header {
+func (c *Factory) header() http.Header {
 	if c.Header == nil {
 		return make(http.Header)
 	}
 	return c.Header
 }
 
-func (c *Client) expandHeader(h http.Header) http.Header {
+func (c *Factory) expandHeader(h http.Header) http.Header {
 	if h == nil {
 		h = make(http.Header)
 	}
@@ -223,32 +224,32 @@ func (c *Client) expandHeader(h http.Header) http.Header {
 	return h
 }
 
-func (c *Client) clientID() string {
+func (c *Factory) clientID() string {
 	if c.TokenOptions.ClientID != "" {
 		return c.TokenOptions.ClientID
 	}
 	return defaultClientID
 }
 
-func (c *Client) challengeCache() ChallengeCache {
+func (c *Factory) challengeCache() ChallengeCache {
 	if c.ChallengeCache != nil {
 		return c.ChallengeCache
 	}
 	return defaultChallengeCache
 }
 
-func (c *Client) tokenCache() TokenCache {
+func (c *Factory) tokenCache() TokenCache {
 	if c.TokenCache != nil {
 		return c.TokenCache
 	}
 	return defaultTokenCache
 }
 
-func (c *Client) challengeCacheKey(request *http.Request) string {
+func (c *Factory) challengeCacheKey(request *http.Request) string {
 	return request.URL.Host
 }
 
-func (c *Client) tokenCacheKey(request *http.Request, scopes ...string) string {
+func (c *Factory) tokenCacheKey(request *http.Request, scopes ...string) string {
 	key := request.URL.Host
 	scopeStr := strings.Join(scopes, ",")
 	if scopeStr != "" {
@@ -257,7 +258,7 @@ func (c *Client) tokenCacheKey(request *http.Request, scopes ...string) string {
 	return key
 }
 
-func (c *Client) setAuthorization(ctx context.Context, request *http.Request, auth authn.AuthConfig) error {
+func (c *Factory) setAuthorization(ctx context.Context, request *http.Request, auth authn.AuthConfig) error {
 	if auth := request.Header.Get("Authorization"); auth != "" {
 		return nil
 	}
@@ -288,7 +289,7 @@ func (c *Client) setAuthorization(ctx context.Context, request *http.Request, au
 	return nil
 }
 
-func (c *Client) setAuthorizationWithChallenge(ctx context.Context, request *http.Request, auth authn.AuthConfig, challenge authn.Challenge) (bool, error) {
+func (c *Factory) setAuthorizationWithChallenge(ctx context.Context, request *http.Request, auth authn.AuthConfig, challenge authn.Challenge) (bool, error) {
 	switch challenge.Scheme {
 	case authn.SchemeBasic:
 		if auth == authn.EmptyAuthConfig {
@@ -313,7 +314,7 @@ func (c *Client) setAuthorizationWithChallenge(ctx context.Context, request *htt
 	return false, nil
 }
 
-func (c *Client) acquireMergeScopes(ctx context.Context, challenge authn.Challenge) []string {
+func (c *Factory) acquireMergeScopes(ctx context.Context, challenge authn.Challenge) []string {
 	requiredScopes := authn.CleanScopes(strings.Split(challenge.Parameters["scope"], " "))
 	wantScopes := authn.CleanScopes(authn.GetScopes(ctx))
 	// merge hinted scopes with challenged scopes
@@ -324,7 +325,7 @@ func (c *Client) acquireMergeScopes(ctx context.Context, challenge authn.Challen
 	return mergeScopes
 }
 
-func (c *Client) acquireToken(ctx context.Context, auth authn.AuthConfig, challenge authn.Challenge) (*authn.Token, error) {
+func (c *Factory) acquireToken(ctx context.Context, auth authn.AuthConfig, challenge authn.Challenge) (*authn.Token, error) {
 	realm := challenge.Parameters["realm"]
 	if realm == "" {
 		return nil, errors.New("malformed Www-Authenticate header (missing realm)")
@@ -335,7 +336,7 @@ func (c *Client) acquireToken(ctx context.Context, auth authn.AuthConfig, challe
 	return c.fetchToken(ctx, auth, realm, service, scopes)
 }
 
-func (c *Client) fetchToken(ctx context.Context, auth authn.AuthConfig, realm string, service string, scopes []string) (*authn.Token, error) {
+func (c *Factory) fetchToken(ctx context.Context, auth authn.AuthConfig, realm string, service string, scopes []string) (*authn.Token, error) {
 	if c.TokenOptions.ForceAttemptOAuth2 || auth.IdentityToken != "" {
 		// fetch token with OAuth2
 		token, err := c.fetchTokenWithOAuth2(ctx, auth, realm, service, scopes)
@@ -351,7 +352,7 @@ func (c *Client) fetchToken(ctx context.Context, auth authn.AuthConfig, realm st
 	return c.fetchTokenWithBasic(ctx, auth, realm, service, scopes)
 }
 
-func (c *Client) fetchTokenWithOAuth2(ctx context.Context, auth authn.AuthConfig, realm string, service string, scopes []string) (*authn.Token, error) {
+func (c *Factory) fetchTokenWithOAuth2(ctx context.Context, auth authn.AuthConfig, realm string, service string, scopes []string) (*authn.Token, error) {
 	form := stdurl.Values{}
 	form.Set("client_id", c.clientID())
 	if auth.IdentityToken != "" {
@@ -385,7 +386,7 @@ func (c *Client) fetchTokenWithOAuth2(ctx context.Context, auth authn.AuthConfig
 	}
 	defer xio.CloseAndSkipError(resp.Body)
 
-	if err := HTTPSuccess(resp, http.StatusNotFound); err != nil {
+	if err := distribution.HTTPSuccess(resp, http.StatusNotFound); err != nil {
 		return nil, err
 	}
 	if resp.StatusCode == http.StatusNotFound {
@@ -402,7 +403,7 @@ func (c *Client) fetchTokenWithOAuth2(ctx context.Context, auth authn.AuthConfig
 	token := &authn.Token{}
 	r := io.LimitReader(resp.Body, maxAuthResponseBytes)
 	if err := json.NewDecoder(r).Decode(token); err != nil {
-		return nil, makeError(resp, err)
+		return nil, distribution.MakeError(resp, err)
 	}
 	if token.IssuedAt.IsZero() {
 		token.IssuedAt = time.Now().UTC()
@@ -410,7 +411,7 @@ func (c *Client) fetchTokenWithOAuth2(ctx context.Context, auth authn.AuthConfig
 	return token, nil
 }
 
-func (c *Client) fetchTokenWithBasic(ctx context.Context, auth authn.AuthConfig, realm string, service string, scopes []string) (*authn.Token, error) {
+func (c *Factory) fetchTokenWithBasic(ctx context.Context, auth authn.AuthConfig, realm string, service string, scopes []string) (*authn.Token, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, realm, http.NoBody)
 	if err != nil {
 		return nil, err
@@ -437,14 +438,14 @@ func (c *Client) fetchTokenWithBasic(ctx context.Context, auth authn.AuthConfig,
 		return nil, err
 	}
 	defer xio.CloseAndSkipError(resp.Body)
-	if err := HTTPSuccess(resp); err != nil {
+	if err := distribution.HTTPSuccess(resp); err != nil {
 		return nil, err
 	}
 
 	token := &authn.Token{}
 	r := io.LimitReader(resp.Body, maxAuthResponseBytes)
 	if err := json.NewDecoder(r).Decode(token); err != nil {
-		return nil, makeError(resp, err)
+		return nil, distribution.MakeError(resp, err)
 	}
 	if token.IssuedAt.IsZero() {
 		token.IssuedAt = time.Now().UTC()
@@ -452,7 +453,7 @@ func (c *Client) fetchTokenWithBasic(ctx context.Context, auth authn.AuthConfig,
 	return token, nil
 }
 
-func (c *Client) detectScheme(ctx context.Context, addr string) (string, error) {
+func (c *Factory) detectScheme(ctx context.Context, addr string) (string, error) {
 	host, scheme, err := parseHostScheme(addr)
 	if err != nil {
 		return "", err

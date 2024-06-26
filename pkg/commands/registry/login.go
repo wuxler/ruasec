@@ -126,21 +126,21 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 	if err := authFile.Load(); err != nil {
 		cmdhelper.Fprintf(cmd.Writer, "Warning: Failed to load auth file: %s", err)
 	}
-	client, err := c.NewDistributionClient()
+	factory, err := c.NewDistributionClientFactory()
 	if err != nil {
 		return err
 	}
 
 	if c.Password == "" && c.Username == "" {
 		// try to login with the crendetial found in default auth files
-		client.AuthProvider = func(ctx context.Context, host string) authn.AuthConfig {
+		factory.AuthProvider = func(ctx context.Context, host string) authn.AuthConfig {
 			authConfig, err := authFile.Get(ctx, host)
 			if err == nil && authConfig != authn.EmptyAuthConfig {
 				cmdhelper.Fprintf(cmd.Writer, "Authenticating with existing credentials ...")
 			}
 			return authConfig
 		}
-		registryClient, err := client.NewRegistryWithContext(ctx, serverAddress)
+		registryClient, err := factory.NewRegistryWithContext(ctx, serverAddress)
 		if err != nil {
 			return err
 		}
@@ -159,10 +159,10 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 		Username: c.Username,
 		Password: c.Password,
 	}
-	client.AuthProvider = func(_ context.Context, _ string) authn.AuthConfig {
+	factory.AuthProvider = func(_ context.Context, _ string) authn.AuthConfig {
 		return authConfig
 	}
-	registryClient, err := client.NewRegistryWithContext(ctx, serverAddress)
+	registryClient, err := factory.NewRegistryWithContext(ctx, serverAddress)
 	if err != nil {
 		return err
 	}
