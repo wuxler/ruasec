@@ -1,4 +1,4 @@
-package client
+package distribution
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 	"github.com/wuxler/ruasec/pkg/xlog"
 )
@@ -18,6 +17,31 @@ const (
 	// 300ms is the default fallback period for go's DNS dialer but we could make this configurable.
 	fallbackDelay = 300 * time.Millisecond
 )
+
+// DetectScheme sniffs the protocol of the target registry server is "http" or "https".
+func DetectScheme(ctx context.Context, client HTTPClient, addr string) (string, error) {
+	ctx = WithDirectRequest(ctx)
+
+	host, scheme, err := parseHostScheme(addr)
+	if err != nil {
+		return "", err
+	}
+	if scheme != "" {
+		return scheme, nil
+	}
+	schemes := []string{"https", "http"}
+	primary := &schemePinger{client: client, host: host, scheme: schemes[0]}
+	fallback := &schemePinger{client: client, host: host, scheme: schemes[1]}
+	isPrimary, err := pingParallel(ctx, primary, fallback)
+	if err != nil {
+		return "", err
+	}
+	detected := schemes[0]
+	if !isPrimary {
+		detected = schemes[1]
+	}
+	return detected, nil
+}
 
 type pinger interface {
 	fmt.Stringer
@@ -122,7 +146,7 @@ func parseHostScheme(addr string) (string, string, error) {
 }
 
 type schemePinger struct {
-	client *http.Client
+	client HTTPClient
 	host   string
 	scheme string
 }
@@ -142,7 +166,7 @@ func (p *schemePinger) Ping(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("failed to do request to %s %s: %w", req.Method, req.URL, err)
 	}
 	defer xio.CloseAndSkipError(resp.Body)
-	if err := distribution.HTTPSuccess(resp, http.StatusUnauthorized); err != nil {
+	if err := HTTPSuccess(resp, http.StatusUnauthorized); err != nil {
 		return false, err
 	}
 	return true, nil

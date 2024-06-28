@@ -2,6 +2,7 @@ package xcache
 
 import (
 	"context"
+	"errors"
 	"math"
 	"time"
 
@@ -43,8 +44,9 @@ func (s *memoryCacheImpl[T]) Get(ctx context.Context, key string, options ...Opt
 		value, ok := o.Loader(ctx, key)
 		if ok {
 			s.cache.Set(key, value)
+			return value, nil
 		}
-		return value, nil
+		return nil, errors.New("unable to load value")
 	})
 	if err != nil {
 		return xgeneric.ZeroValue[T](), false

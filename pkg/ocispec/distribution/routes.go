@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	stdurl "net/url"
 	"regexp"
 	"strings"
 
 	"github.com/opencontainers/go-digest"
+	"github.com/spf13/cast"
 )
 
 // RouteDescriptor is a descriptor for a route endpoint api.
@@ -53,7 +55,7 @@ var (
 		PathPattern: "/v2/{name}/tags/list",
 		QueryParams: map[string]string{
 			"n":    "{integer}",
-			"last": "{tagname}",
+			"last": "{last}",
 		},
 		SuccessCodes: []int{http.StatusOK},       // 200
 		FailureCodes: []int{http.StatusNotFound}, // 404
@@ -73,7 +75,7 @@ var (
 		Method:      http.MethodGet,
 		PathPattern: "/v2/{name}/referrers/{digest}",
 		QueryParams: map[string]string{
-			"artifactType": "{artifactType}",
+			"artifactType": "{artifact_type}",
 		},
 		SuccessCodes: []int{http.StatusOK},                              // 200
 		FailureCodes: []int{http.StatusNotFound, http.StatusBadRequest}, // 404/400
@@ -197,7 +199,7 @@ var (
 		PathPattern: "/v2/{name}/blobs/uploads/",
 		QueryParams: map[string]string{
 			"mount": "{digest}",
-			"from":  "{name}",
+			"from":  "{from_name}",
 		},
 		SuccessCodes: []int{http.StatusCreated},  // 201
 		FailureCodes: []int{http.StatusNotFound}, // 404
@@ -212,18 +214,17 @@ var (
 	}
 )
 
-var (
-	routePathValidatePattern = `\{name\}|\{reference\}|\{digest\}|\{session_id\}|/{2,}`
-	routePathValidateRegex   = regexp.MustCompile(routePathValidatePattern)
-)
-
 type RouteBuilder struct {
-	BaseURL   string
-	Name      string
-	Reference string
-	Digest    digest.Digest
-	SessionID string
-	Body      io.Reader
+	BaseURL      string
+	Name         string
+	Reference    string
+	Digest       digest.Digest
+	SessionID    string
+	FromName     string
+	ArtifactType string
+	PageSize     int
+	Last         string
+	Body         io.Reader
 }
 
 func (rb *RouteBuilder) WithBaseURL(base string) *RouteBuilder {
@@ -251,53 +252,101 @@ func (rb *RouteBuilder) WithSessionID(sessionID string) *RouteBuilder {
 	return rb
 }
 
+func (rb *RouteBuilder) WithFromName(name string) *RouteBuilder {
+	rb.FromName = name
+	return rb
+}
+
+func (rb *RouteBuilder) WithArtifactType(artifactType string) *RouteBuilder {
+	rb.ArtifactType = artifactType
+	return rb
+}
+
+func (rb *RouteBuilder) WithPageSize(size int) *RouteBuilder {
+	rb.PageSize = size
+	return rb
+}
+
+func (rb *RouteBuilder) WithLastOffset(last string) *RouteBuilder {
+	rb.Last = last
+	return rb
+}
+
 func (rb *RouteBuilder) WithBody(body io.Reader) *RouteBuilder {
 	rb.Body = body
 	return rb
 }
 
-func (rb *RouteBuilder) BuildPath(route RouteDescriptor) (string, error) {
-	path := route.PathPattern
+func (rb *RouteBuilder) Endpoint(route RouteDescriptor) Endpoint {
+	return &routeEndpoint{
+		route:   route,
+		builder: rb,
+	}
+}
+
+func (rb *RouteBuilder) replace(pattern string) string {
 	// replace known path params
 	replacements := map[string]string{
-		"{name}":       rb.Name,
-		"{reference}":  rb.Reference,
-		"{digest}":     rb.Digest.String(),
-		"{session_id}": rb.SessionID,
+		"{name}":          rb.Name,
+		"{reference}":     rb.Reference,
+		"{digest}":        rb.Digest.String(),
+		"{session_id}":    rb.SessionID,
+		"{from_name}":     rb.FromName,
+		"{artifact_type}": rb.ArtifactType,
+		"{integer}":       cast.ToString(rb.PageSize),
+		"{last}":          rb.Last,
 	}
 	for k, v := range replacements {
 		if v != "" {
-			path = strings.Replace(path, k, v, -1)
+			pattern = strings.Replace(pattern, k, v, -1)
 		}
 	}
+	return pattern
+}
+
+func (rb *RouteBuilder) buildPath(route RouteDescriptor) (string, error) {
+	path := rb.replace(route.PathPattern)
 	if err := validateRoutePath(path); err != nil {
 		return "", err
 	}
 	return path, nil
 }
 
-func (rb *RouteBuilder) MustBuildPath(route RouteDescriptor) string {
-	path, err := rb.BuildPath(route)
-	if err != nil {
-		panic(err)
-	}
-	return path
-}
-
-func (rb *RouteBuilder) BuildRequest(ctx context.Context, route RouteDescriptor) (*http.Request, error) {
-	routePath, err := rb.BuildPath(route)
+func (rb *RouteBuilder) buildURL(route RouteDescriptor) (*stdurl.URL, error) {
+	routePath, err := rb.buildPath(route)
 	if err != nil {
 		return nil, err
 	}
-	base := strings.TrimSuffix(rb.BaseURL, "/")
-	path := strings.TrimPrefix(routePath, "/")
-	url := base + "/" + path
+	urlStr := strings.TrimSuffix(rb.BaseURL, "/") + "/" + strings.TrimPrefix(routePath, "/")
+	url, err := stdurl.Parse(urlStr)
+	if err != nil {
+		return nil, err
+	}
+	query := url.Query()
+	for k, v := range route.QueryParams {
+		v = rb.replace(v)
+		query.Set(k, v)
+	}
+	url.RawQuery = query.Encode()
+	return url, nil
+}
+
+func (rb *RouteBuilder) buildRequest(ctx context.Context, route RouteDescriptor) (*http.Request, error) {
+	url, err := rb.buildURL(route)
+	if err != nil {
+		return nil, err
+	}
 	body := rb.Body
 	if body == nil {
 		body = http.NoBody
 	}
-	return http.NewRequestWithContext(ctx, route.Method, url, body)
+	return http.NewRequestWithContext(ctx, route.Method, url.String(), body)
 }
+
+var (
+	routePathValidatePattern = `\{name\}|\{reference\}|\{digest\}|\{session_id\}|\{from_name\}|\{artifact_type\}|\{integer\}|\{last\}|/{2,}`
+	routePathValidateRegex   = regexp.MustCompile(routePathValidatePattern)
+)
 
 // Validate returns an error if the request is invalid.
 func validateRoutePath(path string) error {
@@ -306,4 +355,29 @@ func validateRoutePath(path string) error {
 		return nil
 	}
 	return fmt.Errorf("invalid route path: %s", path)
+}
+
+type Endpoint interface {
+	Descriptor() RouteDescriptor
+	BuildPath() (string, error)
+	BuildURL() (*stdurl.URL, error)
+	BuildRequest(ctx context.Context) (*http.Request, error)
+}
+
+type routeEndpoint struct {
+	route   RouteDescriptor
+	builder *RouteBuilder
+}
+
+func (endpoint *routeEndpoint) Descriptor() RouteDescriptor {
+	return endpoint.route
+}
+func (endpoint *routeEndpoint) BuildPath() (string, error) {
+	return endpoint.builder.buildPath(endpoint.route)
+}
+func (endpoint *routeEndpoint) BuildURL() (*stdurl.URL, error) {
+	return endpoint.builder.buildURL(endpoint.route)
+}
+func (endpoint *routeEndpoint) BuildRequest(ctx context.Context) (*http.Request, error) {
+	return endpoint.builder.buildRequest(ctx, endpoint.route)
 }

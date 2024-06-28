@@ -1,215 +1,111 @@
-// Copyright 2023 CUE Labs AG
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-// Modifications copyright (C) 2024 RuaSec Authors
-//
-// The file are copied from oci[github.com/cue-labs/oci], and we keep the original copyright
-// and license above.
-//
-// We directly considered copying the code and made modifications to the code as needed because
-// we didn't want to introduce additional dependencies.
-// Thanks to the original author of the code!
-
 package distribution
 
 import (
 	"context"
-	"io"
 
-	"github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/wuxler/ruasec/pkg/util/xgeneric/iter"
+	imgname "github.com/wuxler/ruasec/pkg/image/name"
+	"github.com/wuxler/ruasec/pkg/ocispec/cas"
 )
 
-// Pinger defines registry ping actions.
-type Pinger interface {
-	// Ping checks if the storage is reachable.
+// Registry is the interface for a distribution registry.
+type Registry interface {
+	// Named returns the name of the registry.
+	Named() imgname.Registry
+
+	// Ping checks registry is accessible.
 	Ping(ctx context.Context) error
+
+	// Repository returns the [Repository] by the given path which is the repository name.
+	Repository(ctx context.Context, path string) (Repository, error)
+
+	// ListRepositories lists the repositories.
+	ListRepositories(ctx context.Context, options ...ListOption) (Iterator[Repository], error)
 }
 
-// Reader defines registry read actions for blobs, manifests, and other resources.
-type Reader interface {
-	// GetManifest returns the contents of the manifest with the given tag or digest.
-	// The context also controls the lifetime of the returned DescribableReadCloser.
-	//
-	// Errors:
-	// 	- ErrNameUnknown when the repository is not present.
-	// 	- ErrManifestUnknown when the blob is not present in the repository.
-	GetManifest(ctx context.Context, repo string, tagOrDigest string) (DescribableReadCloser, error)
-
-	// StatManifest returns the descriptor for a given maniifest.
-	// Only the MediaType, dgst and Size fields will be filled out.
-	//
-	// Errors:
-	// 	- ErrNameUnknown when the repository is not present.
-	// 	- ErrManifestUnknown when the blob is not present in the repository.
-	StatManifest(ctx context.Context, repo string, tagOrDigest string) (imgspecv1.Descriptor, error)
-
-	// StatBlob returns the descriptor for a given blob digest.
-	// Only the MediaType, dgst and Size fields will be filled out.
-	//
-	// Errors:
-	// 	- ErrNameUnknown when the repository is not present.
-	// 	- ErrBlobUnknown when the blob is not present in the repository.
-	StatBlob(ctx context.Context, repo string, dgst digest.Digest) (imgspecv1.Descriptor, error)
-
-	// GetBlob returns the content of the blob with the given digest.
-	// The context also controls the lifetime of the returned DescribableReadCloser.
-	//
-	// Errors:
-	// 	- ErrNameUnknown when the repository is not present.
-	// 	- ErrBlobUnknown when the blob is not present in the repository.
-	GetBlob(ctx context.Context, repo string, dgst digest.Digest) (DescribableReadCloser, error)
-
-	// GetBlobRange is like GetBlob but asks to get only the given range of bytes from the blob,
-	// starting at "start" offset, up to but not including "end" offset.
-	// If "end" offset is negative or exceeds the actual size of the blob, GetBlobRange will
-	// return all the data starting from "start" offset.
-	// The context also controls the lifetime of the returned DescribableReadCloser.
-	GetBlobRange(ctx context.Context, repo string, dgst digest.Digest, start, end int64) (DescribableReadCloser, error)
+// Namespaced is the interface for a distibution registry who supports top-level namespace/project/organization
+// operations.
+type Namespaced interface {
+	// ListNamespaces lists the namespaces.
+	ListNamespaces(ctx context.Context, options ...ListOption) (Iterator[string], error)
+	// Namespace returns a [Repository] by the given namespace wrapped.
+	Namespace(ctx context.Context, ns string) Repository
 }
 
-// Writer defines registry write actions for blobs, manifests, and other resources.
-type Writer interface {
-	// PushBlob pushes a blob described by desc to the given repository, reading content from r.
-	// Only the desc.Digest and desc.Size fields are used.
-	// It returns desc with Digest set to the canonical digest for the blob.
-	//
-	// Errors:
-	// 	- ErrNameUnknown when the repository is not present.
-	// 	- ErrNameInvalid when the repository name is not valid.
-	// 	- ErrDigestInvalid when desc.Digest does not match the content.
-	// 	- ErrSizeInvalid when desc.Size does not match the content length.
-	PushBlob(ctx context.Context, repo string, desc imgspecv1.Descriptor, r io.Reader) (imgspecv1.Descriptor, error)
-
-	// PushBlobChunked starts to push a blob to the given repository.
-	// The returned [WriteCloser] can be used to stream the upload and resume on temporary errors.
-	//
-	// The chunkSize parameter provides a hint for the chunk size to use
-	// when writing to the registry. If it's zero, a suitable default will be chosen.
-	// It might be larger if the underlying registry requires that.
-	//
-	// The context remains active as long as the WriteCloser is around: if it's
-	// canceled, it should cause any blocked WriteCloser operations to terminate.
-	PushBlobChunked(ctx context.Context, repo string, chunkSize int) (BlobWriteCloser, error)
-
-	// PushBlobChunkedResume resumes a previous push of a blob started with PushBlobChunked.
-	// The id should be the value returned from [WriteCloser.ID] from the previous push.
-	// and the offset should be the value returned from [WriteCloser.Size].
-	//
-	// The offset and chunkSize should similarly be obtained from the previous [WriteCloser]
-	// via the [WriteCloser.Size] and [WriteCloser.ChunkSize] methods.
-	// Alternatively, set offset to -1 to continue where the last write left off,
-	// and to only use chunkSize as a hint like in PushBlobChunked.
-	//
-	// The context remains active as long as the WriteCloser is around: if it's
-	// canceled, it should cause any blocked WriteCloser operations to terminate.
-	PushBlobChunkedResume(ctx context.Context, repo, id string, offset int64, chunkSize int) (BlobWriteCloser, error)
-
-	// MountBlob makes a blob with the given digest that's in fromRepo available
-	// in toRepo and returns its canonical descriptor.
-	//
-	// This avoids the need to pull content down from fromRepo only to push it to r.
-	//
-	// Errors:
-	// 	- ErrUnsupported (when the repository does not support mounts).
-	//
-	// TODO(wuxler): the mount endpoint doesn't return the size of the content,
-	// so to return a correctly populated descriptor, a client will need to make
-	// an extra HTTP call to find that out. For now, we'll just say that
-	// the descriptor returned from MountBlob might have a zero Size.
-	MountBlob(ctx context.Context, fromRepo, toRepo string, dgst digest.Digest) (imgspecv1.Descriptor, error)
-
-	// PushManifest pushes a manifest with the given media type and contents.
-	// If mediaType is not specified, "application/octet-stream" is used.
-	// If tag is non-empty, the tag with that name will be pointed at the manifest.
-	//
-	// It returns a descriptor suitable for accessing the manifest.
-	PushManifest(ctx context.Context, repo string, tag string, content []byte, mediaType string) (imgspecv1.Descriptor, error)
+// Repository is the interface for a distribution repository.
+type Repository interface {
+	// Named returns the name of the repository.
+	Named() imgname.Repository
+	// Manifests returns a reference to this repository's manifest storage.
+	Manifests() ManifestStore
+	// Tags returns a reference to this repository's tag storage.
+	Tags() TagStore
+	// Blobs returns a reference to this repository's blob storage.
+	Blobs() BlobStore
 }
 
-// Deleter defines registry delete actions that for blobs, manifests and other resources.
-type Deleter interface {
-	// DeleteBlob deletes the blob with the given digest in the given repository.
-	DeleteBlob(ctx context.Context, repo string, dgst digest.Digest) error
-
-	// DeleteManifest deletes the manifest with the given digest in the given repository.
-	DeleteManifest(ctx context.Context, repo string, dgst digest.Digest) error
-
-	// DeleteTag deletes the manifest with the given tag in the given repository.
-	//
-	// FIXME(wuxler): does this delete the tag only, or the manifest too?
-	DeleteTag(ctx context.Context, repo string, tag string) error
+// BlobStore is a storage interface for blobs resource.
+type BlobStore interface {
+	cas.Storage
 }
 
-// Lister defines registry operations that enumerate objects within the registry.
-// TODO(wuxler): support resumption from a given point.
-type Lister interface {
-	// Repositories returns an iterator that can be used to iterate
-	// over all the repositories in the registry in lexical order.
-	// If startAfter is non-empty, the iteration starts lexically
-	// after, but not including, that repository.
-	Repositories(ctx context.Context, startAfter string) iter.Seq[string]
-
-	// Tags returns an iterator that can be used to iterate over all
-	// the tags in the given repository in lexical order. If
-	// startAfter is non-empty, the tags start lexically after, but
-	// not including that tag.
-	Tags(ctx context.Context, repo string, startAfter string) iter.Seq[string]
-
-	// Referrers returns an iterator that can be used to iterate over all
-	// the manifests that have the given digest as their Subject.
-	// If artifactType is non-zero, the results will be restricted to
-	// only manifests with that type.
-	//
-	// FIXME(wuxler): is it possible to ask for multiple artifact types?
-	Referrers(ctx context.Context, repo string, dgst digest.Digest, artifactType string) iter.Seq[imgspecv1.Descriptor]
+// ManifestStore is a storage interface for manifests resource.
+type ManifestStore interface {
+	cas.Storage
+	// FetchTagOrDigest fetches the content for the given tag or digest.
+	FetchTagOrDigest(ctx context.Context, tagOrDigest string) (cas.ReadCloser, error)
+	// StatTagOrDigest returns the descriptor for the given tag or digest.
+	StatTagOrDigest(ctx context.Context, tagOrDigest string) (imgspecv1.Descriptor, error)
 }
 
-// BlobWriteCloser provides a handle for uploading a blob to a registry.
-type BlobWriteCloser interface {
-	// Write writes more data to the blob. When resuming, the
-	// caller must start writing data from Size bytes into the content.
-	io.Writer
+// TagStore is a storage interface for tags resource.
+type TagStore interface {
+	// Stat retrieves the descriptor identified by the given tag.
+	Stat(ctx context.Context, tag string) (imgspecv1.Descriptor, error)
+	// Tag tags the target by the given tag.
+	Tag(ctx context.Context, target cas.Reader, tag string) error
+	// Untag removes the tag.
+	Untag(ctx context.Context, tag string) error
+	// List lists the tags.
+	List(ctx context.Context, options ...ListOption) Iterator[string]
+}
 
-	// Closer closes the writer but does not abort. The blob write
-	// can later be resumed.
-	io.Closer
+// Iterator is the interface for list operation.
+type Iterator[T any] interface {
+	// Next called for next page.
+	Next() ([]T, error)
+}
 
-	// Size returns the number of bytes written to this blob.
-	Size() int64
+// IteratorFunc is a function that implements [Iterator].
+type IteratorFunc[T any] func() ([]T, error)
 
-	// ChunkSize returns the maximum number of bytes to upload at a single time.
-	// This number must meet the minimum given by the registry
-	// and should otherwise follow the hint given by the user.
-	ChunkSize() int
+// Next called for next page.
+func (fn IteratorFunc[T]) Next() ([]T, error) {
+	return fn()
+}
 
-	// ID returns the opaque identifier for this writer. The returned value
-	// can be passed to PushBlobChunked to resume the write.
-	// It is only valid before Write has been called or after Close has
-	// been called.
-	ID() string
+// ListOption used as optional parameters in list function.
+type ListOption func(*ListOptions)
 
-	// Commit completes the blob writer process. The content is verified
-	// against the provided digest, and a canonical descriptor for it is returned.
-	Commit(digest digest.Digest) (imgspecv1.Descriptor, error)
+// ListOptions is the options of the list operations.
+type ListOptions struct {
+	// PageSize represents each iterate page size.
+	PageSize int
+	// Offset represents where the list iterator should start at.
+	Offset string
+}
 
-	// Cancel ends the blob write without storing any data and frees any
-	// associated resources. Any data written thus far will be lost. Cancel
-	// implementations should allow multiple calls even after a commit that
-	// result in a no-op. This allows use of Cancel in a defer statement,
-	// increasing the assurance that it is correctly called.
-	Cancel() error
+// WithPageSize sets the page size option.
+func WithPageSize(size int) ListOption {
+	return func(o *ListOptions) {
+		o.PageSize = size
+	}
+}
+
+// WithOffset sets the offset option.
+func WithOffset(offset string) ListOption {
+	return func(o *ListOptions) {
+		o.Offset = offset
+	}
 }

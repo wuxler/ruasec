@@ -56,6 +56,8 @@ func HTTPSuccess(resp *http.Response, allowedCodes ...int) error {
 	return MakeError(resp, errors.New(errMsg))
 }
 
+// MakeError creates error wraps request informations from the response.
+// If the resp is nil, just return the err.
 func MakeError(resp *http.Response, err error) error {
 	if resp == nil {
 		return err
@@ -66,6 +68,8 @@ func MakeError(resp *http.Response, err error) error {
 	return fmt.Errorf("%s %s: %w", resp.Request.Method, resp.Request.URL.Redacted(), err)
 }
 
+// DescriptorFromResponse generates Descriptor from the http response.
+//
 //nolint:gocognit
 func DescriptorFromResponse(resp *http.Response, knownDigest digest.Digest) (imgspecv1.Descriptor, error) {
 	var zero imgspecv1.Descriptor

@@ -15,6 +15,7 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/authfile"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/credentials"
+	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 )
 
 // NewLoginCommand returns a LoginCommand with default values.
@@ -126,25 +127,25 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 	if err := authFile.Load(); err != nil {
 		cmdhelper.Fprintf(cmd.Writer, "Warning: Failed to load auth file: %s", err)
 	}
-	factory, err := c.NewDistributionClientFactory()
+	client, err := c.NewDistributionClient()
 	if err != nil {
 		return err
 	}
 
 	if c.Password == "" && c.Username == "" {
 		// try to login with the crendetial found in default auth files
-		factory.AuthProvider = func(ctx context.Context, host string) authn.AuthConfig {
+		client.AuthProvider = func(ctx context.Context, host string) authn.AuthConfig {
 			authConfig, err := authFile.Get(ctx, host)
 			if err == nil && authConfig != authn.EmptyAuthConfig {
 				cmdhelper.Fprintf(cmd.Writer, "Authenticating with existing credentials ...")
 			}
 			return authConfig
 		}
-		registryClient, err := factory.NewRegistryWithContext(ctx, serverAddress)
+		registry, err := remote.NewRegistryWithContext(ctx, serverAddress, remote.WithHTTPClient(client))
 		if err != nil {
 			return err
 		}
-		if err := registryClient.Ping(ctx); err == nil {
+		if err := registry.Ping(ctx); err == nil {
 			return nil
 		}
 	}
@@ -159,14 +160,14 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 		Username: c.Username,
 		Password: c.Password,
 	}
-	factory.AuthProvider = func(_ context.Context, _ string) authn.AuthConfig {
+	client.AuthProvider = func(_ context.Context, _ string) authn.AuthConfig {
 		return authConfig
 	}
-	registryClient, err := factory.NewRegistryWithContext(ctx, serverAddress)
+	registry, err := remote.NewRegistryWithContext(ctx, serverAddress, remote.WithHTTPClient(client))
 	if err != nil {
 		return err
 	}
-	if err := registryClient.Ping(ctx); err != nil {
+	if err := registry.Ping(ctx); err != nil {
 		return err
 	}
 	// store the validate credential

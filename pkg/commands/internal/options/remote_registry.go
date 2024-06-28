@@ -10,7 +10,9 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
-	"github.com/wuxler/ruasec/pkg/ocispec/distribution/client"
+	imgname "github.com/wuxler/ruasec/pkg/image/name"
+	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
+	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 )
 
 // NewRemoteRegistryOptions returns a *RemoteRegistryOptions with default values.
@@ -62,8 +64,8 @@ func (o *RemoteRegistryOptions) Flags() []cli.Flag {
 	}
 }
 
-// NewDistributionClientFactory returns a client factory with options configured.
-func (o *RemoteRegistryOptions) NewDistributionClientFactory() (*client.Factory, error) {
+// NewDistributionClient returns a client with options configured.
+func (o *RemoteRegistryOptions) NewDistributionClient() (*distribution.Client, error) {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	// load tls config
 	tlsConfig := &tls.Config{
@@ -80,26 +82,24 @@ func (o *RemoteRegistryOptions) NewDistributionClientFactory() (*client.Factory,
 	}
 	tr.TLSClientConfig = tlsConfig
 
-	factory := &client.Factory{
-		Client: &http.Client{
-			Transport: tr,
-		},
-	}
+	client := distribution.NewClient()
+	client.Client = &http.Client{Transport: tr}
 
 	if o.AuthFile != "" {
-		authProvider, err := client.NewAuthProviderFromAuthFilePath(o.AuthFile)
+		authProvider, err := distribution.NewAuthProviderFromAuthFilePath(o.AuthFile)
 		if err != nil {
 			return nil, err
 		}
-		factory.AuthProvider = authProvider
+		client.AuthProvider = authProvider
 	}
-	return factory, nil
+	return client, nil
 }
 
-func (o *RemoteRegistryOptions) NewRegistryClient(ctx context.Context, addr string) (*client.Registry, error) {
-	factory, err := o.NewDistributionClientFactory()
+// NewRepository returns the remote repository client for the target named.
+func (o *RemoteRegistryOptions) NewRepository(ctx context.Context, target imgname.Repository) (distribution.Repository, error) {
+	client, err := o.NewDistributionClient()
 	if err != nil {
 		return nil, err
 	}
-	return factory.NewRegistryWithContext(ctx, addr)
+	return remote.NewRepositoryWithContext(ctx, target.String(), remote.WithHTTPClient(client))
 }

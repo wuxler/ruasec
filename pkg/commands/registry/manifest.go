@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
 	"github.com/wuxler/ruasec/pkg/image/manifest"
 	"github.com/wuxler/ruasec/pkg/image/name"
+	"github.com/wuxler/ruasec/pkg/ocispec/cas"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 )
 
@@ -99,11 +101,12 @@ func (c *ManifestFetchCommand) Run(ctx context.Context, cmd *cli.Command) error 
 		return err
 	}
 
-	client, err := c.NewRegistryClient(ctx, target.Repository().Domain().String())
+	repository, err := c.NewRepository(ctx, target.Repository())
 	if err != nil {
 		return err
 	}
-	rc, err := client.GetManifest(ctx, target.Repository().Path(), tagOrDigest)
+
+	rc, err := repository.Manifests().FetchTagOrDigest(ctx, tagOrDigest)
 	if err != nil {
 		return err
 	}
@@ -169,11 +172,13 @@ func (c *ManifestStatCommand) Run(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	client, err := c.NewRegistryClient(ctx, target.Repository().Domain().String())
+
+	repository, err := c.NewRepository(ctx, target.Repository())
 	if err != nil {
 		return err
 	}
-	desc, err := client.StatManifest(ctx, target.Repository().Path(), tagOrDigest)
+
+	desc, err := repository.Manifests().StatTagOrDigest(ctx, tagOrDigest)
 	if err != nil {
 		return err
 	}
@@ -239,11 +244,11 @@ func (c *ManifestDeleteCommand) Run(ctx context.Context, cmd *cli.Command) error
 	if err != nil {
 		return err
 	}
-	client, err := c.NewRegistryClient(ctx, target.Repository().Domain().String())
+	repository, err := c.NewRepository(ctx, target.Repository())
 	if err != nil {
 		return err
 	}
-	desc, err := client.StatManifest(ctx, target.Repository().Path(), tagOrDigest)
+	desc, err := repository.Manifests().StatTagOrDigest(ctx, tagOrDigest)
 	if err != nil {
 		return err
 	}
@@ -273,7 +278,7 @@ func (c *ManifestDeleteCommand) Run(ctx context.Context, cmd *cli.Command) error
 		return nil
 	}
 
-	if err := client.DeleteManifest(ctx, target.Repository().Path(), desc.Digest); err != nil {
+	if err := repository.Manifests().Delete(ctx, desc); err != nil {
 		return err
 	}
 	cmdhelper.Fprintf(cmd.Writer, "Deleted %s", target)
@@ -326,13 +331,16 @@ func (c *ManifestPushCommand) Run(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	refs := []name.Reference{target}
+	rawTag, err := name.Identify(target)
+	if err != nil {
+		return err
+	}
+	allTags := []string{rawTag}
 	for _, tag := range extraTags {
-		extraReference, err := name.WithTag(target.Repository(), tag)
-		if err != nil {
+		if _, err := name.WithTag(target.Repository(), tag); err != nil {
 			return err
 		}
-		refs = append(refs, extraReference)
+		allTags = append(allTags, tag)
 	}
 
 	file := cmd.Args().Get(1)
@@ -348,27 +356,31 @@ func (c *ManifestPushCommand) Run(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return fmt.Errorf("failed to read %s: %w", file, err)
 	}
-
 	mediaType := manifest.DetectMediaType(fileContent)
+	desc := manifest.NewDescriptorFromBytes(mediaType, fileContent)
 
-	client, err := c.NewRegistryClient(ctx, target.Repository().Domain().String())
-	if err != nil {
-		return err
-	}
-	for _, ref := range refs {
-		tag, err := name.Identify(ref)
-		if err != nil {
-			return err
-		}
-		desc, err := client.PushManifest(ctx, ref.Repository().Path(), tag, fileContent, mediaType)
-		if err != nil {
-			return err
-		}
-		cmdhelper.Fprintf(cmd.Writer, `Pushed %s
+	cmdhelper.Fprintf(cmd.Writer, `Descriptor:
   - MediaType: %s
   - Digest   : %s
   - Size     : %d
-`, ref, desc.MediaType, desc.Digest, desc.Size)
+`, desc.MediaType, desc.Digest, desc.Size)
+
+	repository, err := c.NewRepository(ctx, target.Repository())
+	if err != nil {
+		return err
+	}
+
+	for _, tag := range allTags {
+		ref, err := name.WithTag(target.Repository(), tag)
+		if err != nil {
+			return err
+		}
+		reader := cas.NewReader(bytes.NewReader(fileContent), desc)
+		if err := repository.Tags().Tag(ctx, reader, tag); err != nil {
+			return err
+		}
+
+		cmdhelper.Fprintf(cmd.Writer, "Pushed %s", ref)
 	}
 
 	return nil
