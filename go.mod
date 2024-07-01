@@ -9,7 +9,7 @@ require (
 	github.com/maypok86/otter v1.2.1
 	github.com/opencontainers/go-digest v1.0.1-0.20231212064514-429d0316a3dd
 	github.com/opencontainers/image-spec v1.1.0
-	github.com/samber/lo v1.39.0
+	github.com/samber/lo v1.44.0
 	github.com/smallnest/deepcopy v1.0.0
 	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.9.0
@@ -27,6 +27,6 @@ require (
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 )
