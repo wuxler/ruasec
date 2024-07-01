@@ -6,6 +6,7 @@ import (
 
 	"github.com/opencontainers/go-digest"
 
+	"github.com/wuxler/ruasec/pkg/errdefs"
 	"github.com/wuxler/ruasec/pkg/image/name/internal"
 )
 
@@ -13,7 +14,7 @@ import (
 func ValidateRegistry(r Registry) error {
 	domain := r.Hostname()
 	if !internal.AnchoredDomainRegexp.MatchString(domain) {
-		return newErrBadName("invalid domain format %q", domain)
+		return errdefs.Newf(ErrBadName, "invalid domain format %q", domain)
 	}
 	if err := ValidateRegistryScheme(r.Scheme()); err != nil {
 		return err
@@ -31,7 +32,7 @@ func ValidateRegistryScheme(scheme string) error {
 	if slices.Contains(allowed, scheme) {
 		return nil
 	}
-	return newErrBadName("only %s or empty scheme is allowed", strings.Join(allowed, ", "))
+	return errdefs.Newf(ErrBadName, "only %s or empty scheme is allowed", strings.Join(allowed, ", "))
 }
 
 // ValidateRepository checks whether the Repository is valid.
@@ -48,7 +49,7 @@ func ValidateRepository(r Repository) error {
 // ValidateRepositoryPath checks whether the path provided is valid.
 func ValidateRepositoryPath(path string) error {
 	if !internal.AnchoredRemoteNameRegexp.MatchString(path) {
-		return newErrBadName("invalid repository path %q, not match regexp: %s",
+		return errdefs.Newf(ErrBadName, "invalid repository path %q, not match regexp: %s",
 			path, internal.AnchoredRemoteNameRegexp)
 	}
 	return nil
@@ -75,7 +76,7 @@ func ValidateReference(r Reference) error {
 // ValidateTag checks whether the tag is valid.
 func ValidateTag(tag string) error {
 	if !internal.AnchoredTagRegexp.MatchString(tag) {
-		return newErrBadName("invalid tag format %q", tag)
+		return errdefs.Newf(ErrBadName, "invalid tag format %q", tag)
 	}
 	return nil
 }
@@ -83,7 +84,7 @@ func ValidateTag(tag string) error {
 // ValidateDigest checks whether the digest is valid.
 func ValidateDigest(dgst digest.Digest) error {
 	if !internal.AnchoredDigestRegexp.MatchString(dgst.String()) {
-		return newErrBadName("invalid digest format %q", dgst)
+		return errdefs.Newf(ErrBadName, "invalid digest format %q", dgst)
 	}
 	return nil
 }

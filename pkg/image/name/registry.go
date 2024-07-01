@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/wuxler/ruasec/pkg/errdefs"
 	"github.com/wuxler/ruasec/pkg/image/name/internal"
 	"github.com/wuxler/ruasec/pkg/image/name/internal/xregexp"
 )
@@ -90,7 +91,7 @@ func parseRegistry(name string, opts options) (registry, error) {
 	var zero registry
 	if name == "" {
 		if opts.strict {
-			return zero, newErrBadName("strict validation requires the registry to be explicitly defined")
+			return zero, errdefs.Newf(ErrBadName, "strict validation requires the registry to be explicitly defined")
 		}
 		return zero, nil
 	}
@@ -100,7 +101,7 @@ func parseRegistry(name string, opts options) (registry, error) {
 	if scheme != "" {
 		url, err := stdurl.Parse(name)
 		if err != nil {
-			return zero, newErrBadName("unable to parse as url: %w", err)
+			return zero, errdefs.Newf(ErrBadName, "unable to parse as url: %w", err)
 		}
 		return registry{scheme: url.Scheme, hostname: url.Host}, nil
 	}
@@ -111,7 +112,7 @@ func parseRegistry(name string, opts options) (registry, error) {
 		return registry{hostname: url.Host}, nil
 	}
 
-	return zero, newErrBadName("registry must be a valid RFC 3986 URI authority")
+	return zero, errdefs.Newf(ErrBadName, "registry must be a valid RFC 3986 URI authority")
 }
 
 func guessHTTP(hostname string) string {

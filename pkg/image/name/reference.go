@@ -6,6 +6,7 @@ import (
 
 	"github.com/opencontainers/go-digest"
 
+	"github.com/wuxler/ruasec/pkg/errdefs"
 	"github.com/wuxler/ruasec/pkg/image/name/internal"
 )
 
@@ -95,20 +96,20 @@ func parseReference(name string, opts options) (Reference, error) {
 	matches := internal.AnchoredReferenceRegexp.FindStringSubmatch(name)
 	if matches == nil {
 		if name == "" {
-			return zero, newErrBadName("non-empty reference name is required")
+			return zero, errdefs.Newf(ErrBadName, "non-empty reference name is required")
 		}
 		if internal.AnchoredReferenceRegexp.FindStringSubmatch(strings.ToLower(name)) != nil {
-			return nil, newErrBadName("reference name must be lowercase")
+			return nil, errdefs.Newf(ErrBadName, "reference name must be lowercase")
 		}
-		return nil, newErrBadName("invalid reference name")
+		return nil, errdefs.Newf(ErrBadName, "invalid reference name")
 	}
 	if len(matches[1]) > nameTotalLengthMax {
-		return nil, newErrBadName("reference name exceeds maximum length %d", nameTotalLengthMax)
+		return nil, errdefs.Newf(ErrBadName, "reference name exceeds maximum length %d", nameTotalLengthMax)
 	}
 
 	remoteName := matches[1]
 	if scheme != "" {
-		remoteName = scheme + "://" + remoteName //nolint:goconst // skip const required
+		remoteName = scheme + "://" + remoteName
 	}
 	repo, err := newRepository(remoteName, opts)
 	if err != nil {
@@ -121,7 +122,7 @@ func parseReference(name string, opts options) (Reference, error) {
 	if matches[3] != "" {
 		dgst, err = digest.Parse(matches[3])
 		if err != nil {
-			return nil, newErrBadName("invalid digest: %w", err)
+			return nil, errdefs.Newf(ErrBadName, "invalid digest: %w", err)
 		}
 	}
 
@@ -139,5 +140,5 @@ func parseReference(name string, opts options) (Reference, error) {
 		return digestedReference{repo: repo, digest: dgst}, nil
 	}
 
-	return nil, newErrBadName("both tag or digest not specified: missing reference")
+	return nil, errdefs.Newf(ErrBadName, "both tag or digest not specified: missing reference")
 }

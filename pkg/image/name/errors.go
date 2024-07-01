@@ -2,7 +2,6 @@ package name
 
 import (
 	"errors"
-	"fmt"
 )
 
 var (
@@ -11,15 +10,3 @@ var (
 	// ErrInvalidReference is an error for when an invalid reference is supplied.
 	ErrInvalidReference = errors.New("invalid reference")
 )
-
-func newErr(err error, format string, args ...any) error {
-	return errors.Join(err, fmt.Errorf(format, args...))
-}
-
-func newErrBadName(format string, args ...any) error {
-	return newErr(ErrBadName, format, args...)
-}
-
-func newErrInvalidReference(format string, args ...any) error {
-	return newErr(ErrInvalidReference, format, args...)
-}

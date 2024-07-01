@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/opencontainers/go-digest"
+
+	"github.com/wuxler/ruasec/pkg/errdefs"
 )
 
 const (
@@ -205,7 +207,7 @@ func Identify(ref Reference) (string, error) {
 	if tagged, ok := IsTagged(ref); ok {
 		return tagged.Tag(), nil
 	}
-	return "", newErrInvalidReference("must be tagged or digested reference: %s", ref)
+	return "", errdefs.Newf(ErrInvalidReference, "must be tagged or digested reference: %s", ref)
 }
 
 // MustIdentify wraps Identify with error panic.

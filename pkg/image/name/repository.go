@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/wuxler/ruasec/pkg/errdefs"
 	"github.com/wuxler/ruasec/pkg/image/name/internal"
 )
 
@@ -53,11 +54,11 @@ func normalizeRepository(repo repository, _ options) repository {
 func parseRepository(name string, opts options) (repository, error) {
 	var zero repository
 	if name == "" {
-		return zero, newErrBadName("non-empty repository name is required")
+		return zero, errdefs.Newf(ErrBadName, "non-empty repository name is required")
 	}
 
 	if ok := internal.AnchoredIdentifierRegexp.MatchString(name); ok {
-		return zero, newErrBadName("invalid format: repository name cannot be 64-byte hexadecimal strings")
+		return zero, errdefs.Newf(ErrBadName, "invalid format: repository name cannot be 64-byte hexadecimal strings")
 	}
 
 	// split "http(s)://<host>/<path>" to "http(s)" and "<host>/<path>
@@ -92,13 +93,13 @@ func parseRepository(name string, opts options) (repository, error) {
 		remoteName = remoteName[:i]
 	}
 	if remoteName == "" {
-		return zero, newErrBadName("repository name is empty")
+		return zero, errdefs.Newf(ErrBadName, "repository name is empty")
 	}
 	if strings.ToLower(remoteName) != remoteName {
-		return zero, newErrBadName("repository name must be lowercase")
+		return zero, errdefs.Newf(ErrBadName, "repository name must be lowercase")
 	}
 	if hasImpliciyNamespace(registry.Hostname(), remoteName) && opts.strict {
-		return zero, newErrBadName("strict validation requires the full repository path (missing 'library')")
+		return zero, errdefs.Newf(ErrBadName, "strict validation requires the full repository path (missing 'library')")
 	}
 
 	repo := repository{
