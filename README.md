@@ -1,6 +1,7 @@
 # RuaSec
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/wuxler/ruasec)](https://goreportcard.com/report/github.com/wuxler/ruasec)
+[![codecov](https://codecov.io/github/wuxler/ruasec/graph/badge.svg?token=UJ0PNEM161)](https://codecov.io/github/wuxler/ruasec)
 [![Godoc Reference](https://godoc.org/github.com/mattn/go-isatty?status.svg)](https://pkg.go.dev/github.com/wuxler/ruasec?status.svg)
 ![License Apache2.0](https://img.shields.io/badge/License-Apache2.0-blue.svg)
 
