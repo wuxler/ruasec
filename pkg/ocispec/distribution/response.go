@@ -6,6 +6,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/samber/lo"
 
+	"github.com/wuxler/ruasec/pkg/errdefs"
 	"github.com/wuxler/ruasec/pkg/image/manifest"
 )
 
@@ -65,7 +67,11 @@ func MakeError(resp *http.Response, err error) error {
 	if err == nil {
 		return nil
 	}
-	return fmt.Errorf("%s %s: %w", resp.Request.Method, resp.Request.URL.Redacted(), err)
+	merr := fmt.Errorf("%s %s: %w", resp.Request.Method, resp.Request.URL.Redacted(), err)
+	if resp.StatusCode == http.StatusNotFound {
+		merr = errdefs.NewE(errdefs.ErrNotFound, merr)
+	}
+	return merr
 }
 
 // DescriptorFromResponse generates Descriptor from the http response.
@@ -133,4 +139,32 @@ func DescriptorFromResponse(resp *http.Response, knownDigest digest.Digest) (img
 		Size:      size,
 	}
 	return desc, nil
+}
+
+// GetNextPageURL checks if there  is a "Link" header in a http.Response which contains a
+// link to the next page. If yes it returns the url.URL of the next page, otherwise returns
+// nil and error.
+func GetNextPageURL(resp *http.Response) (*url.URL, error) {
+	link := resp.Header.Get("Link")
+	if link == "" {
+		return nil, errdefs.Newf(errdefs.ErrNotFound, "missing 'Link' header in response")
+	}
+	if link[0] != '<' {
+		return nil, fmt.Errorf("invalid 'Link' header %q: missing '<' as the first character", link)
+	}
+	end := strings.Index(link, ">")
+	if end < 0 {
+		return nil, fmt.Errorf("invalid 'Link' header %q: missing '>' character", link)
+	}
+	link = link[1:end]
+
+	linkURL, err := url.Parse(link)
+	if err != nil {
+		return nil, fmt.Errorf("invalid 'Link' header %q: %w", link, err)
+	}
+	if resp.Request == nil || resp.Request.URL == nil {
+		return nil, errdefs.Newf(errdefs.ErrNotFound, "missing request URL in response")
+	}
+	linkURL = resp.Request.URL.ResolveReference(linkURL)
+	return linkURL, nil
 }

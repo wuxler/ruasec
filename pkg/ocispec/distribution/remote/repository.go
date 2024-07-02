@@ -3,11 +3,17 @@ package remote
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"io"
+	"net/http"
+	stdurl "net/url"
 
 	"github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"github.com/spf13/cast"
 
+	"github.com/wuxler/ruasec/pkg/errdefs"
 	imgname "github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
 	"github.com/wuxler/ruasec/pkg/ocispec/cas"
@@ -80,7 +86,7 @@ func (repo *Repository) statManifest(ctx context.Context, tagOrDigest string) (i
 	}
 	request.Header.Set("Accept", manifestAcceptHeader())
 
-	resp, err := repo.client.Do(request)
+	resp, err := repo.client.Do(request) //nolint:bodyclose // closed by xio.CloseAndSkipError
 	if err != nil {
 		return zero, err
 	}
@@ -114,7 +120,7 @@ func (repo *Repository) fetchManifest(ctx context.Context, tagOrDigest string) (
 	}
 	request.Header.Set("Accept", manifestAcceptHeader())
 
-	resp, err := repo.client.Do(request)
+	resp, err := repo.client.Do(request) //nolint:bodyclose // closed by xio.CloseAndSkipError
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +148,7 @@ func (repo *Repository) deleteManifest(ctx context.Context, dgst digest.Digest) 
 	if err != nil {
 		return err
 	}
-	resp, err := repo.client.Do(request)
+	resp, err := repo.client.Do(request) //nolint:bodyclose // closed by xio.CloseAndSkipError
 	if err != nil {
 		return err
 	}
@@ -178,7 +184,7 @@ func (repo *Repository) pushManifest(ctx context.Context, target cas.Reader, tag
 		return err
 	}
 	request.Header.Set("Content-Type", target.Descriptor().MediaType)
-	resp, err := repo.client.Do(request)
+	resp, err := repo.client.Do(request) //nolint:bodyclose // closed by xio.CloseAndSkipError
 	if err != nil {
 		return err
 	}
@@ -204,7 +210,9 @@ func (s *manifestStore) Exists(ctx context.Context, target imgspecv1.Descriptor)
 	if err == nil {
 		return true, nil
 	}
-	// TODO: check err type to ignore ErrNotFound.
+	if errors.Is(err, errdefs.ErrNotFound) {
+		return false, nil
+	}
 	return false, err
 }
 
@@ -257,8 +265,88 @@ func (s *tagStore) Untag(ctx context.Context, tag string) error {
 }
 
 // List lists the tags.
-func (s *tagStore) List(ctx context.Context, options ...distribution.ListOption) distribution.Iterator[string] {
-	panic("not implemented") // TODO: Implement
+func (s *tagStore) List(options ...distribution.ListOption) distribution.Iterator[string] {
+	return &tagIterator{
+		Repository: s.Repository,
+		options:    distribution.MakeListOptions(options...),
+		endpoint:   s.builder().Endpoint(distribution.RouteTagsList),
+	}
+}
+
+type tagIterator struct {
+	*Repository
+	options  *distribution.ListOptions
+	endpoint distribution.Endpoint
+
+	// private attributes
+	next *stdurl.URL
+	done bool
+}
+
+// Next called for next page. If no more items to iterate, returns error with ErrIteratorDone.
+func (it *tagIterator) Next(ctx context.Context) ([]string, error) {
+	if it.done {
+		return nil, distribution.ErrIteratorDone
+	}
+	if err := it.init(); err != nil {
+		return nil, err
+	}
+
+	ctx = authn.WithScopes(ctx, authn.RepositoryScope(it.Named().Path(), authn.ActionPull))
+	route := it.endpoint.Descriptor()
+	request, err := http.NewRequestWithContext(ctx, route.Method, it.next.String(), http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := it.client.Do(request) //nolint:bodyclose // closed by xio.CloseAndSkipError
+	if err != nil {
+		return nil, err
+	}
+	defer xio.CloseAndSkipError(resp.Body)
+	if err := distribution.HTTPSuccess(resp, route.SuccessCodes...); err != nil {
+		return nil, err
+	}
+
+	type tagsResponse struct {
+		Name string   `json:"name"` // Name is the name of the repository
+		Tags []string `json:"tags"`
+	}
+
+	parsed := tagsResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
+		return nil, err
+	}
+
+	next, err := distribution.GetNextPageURL(resp)
+	if err != nil {
+		if errors.Is(err, errdefs.ErrNotFound) {
+			it.done = true
+		} else {
+			return nil, err
+		}
+	}
+	it.next = next
+	return parsed.Tags, nil
+}
+
+func (it *tagIterator) init() error {
+	if it.next != nil {
+		return nil
+	}
+	url, err := it.endpoint.BuildURL()
+	if err != nil {
+		return err
+	}
+	query := url.Query()
+	if it.options.Offset != "" {
+		query.Set("last", it.options.Offset)
+	}
+	if it.options.PageSize > 0 {
+		query.Set("n", cast.ToString(it.options.PageSize))
+	}
+	url.RawQuery = query.Encode()
+	it.next = url
+	return nil
 }
 
 type blobStore struct {

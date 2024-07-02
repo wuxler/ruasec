@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/wuxler/ruasec/pkg/errdefs"
 )
@@ -35,7 +36,7 @@ func TestErrors(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run("NewE_"+tc.name, func(t *testing.T) {
-			assert.NotErrorIs(t, errTest, tc.err)
+			require.NotErrorIs(t, errTest, tc.err)
 			e := errdefs.NewE(tc.err, errTest)
 			assert.ErrorIs(t, e, tc.err)
 		})

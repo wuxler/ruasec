@@ -23,6 +23,7 @@ func (c *RegistryCommand) ToCLI() *cli.Command {
 			NewLoginCommand().ToCLI(),
 			NewLogoutCommand().ToCLI(),
 			NewManifestCommand().ToCLI(),
+			NewRepositoryCommand().ToCLI(),
 		},
 	}
 }

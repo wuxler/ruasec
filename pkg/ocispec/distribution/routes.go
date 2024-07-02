@@ -39,6 +39,14 @@ var (
 		SuccessCodes: []int{http.StatusOK},                                // 200
 		FailureCodes: []int{http.StatusNotFound, http.StatusUnauthorized}, // 404/401
 	}
+	// RouteRepositoriesList is the route descriptor for the repositories to list.
+	RouteRepositoriesList = RouteDescriptor{
+		ID:           "end-x-1",
+		Method:       http.MethodGet,
+		PathPattern:  "/v2/_catalog",
+		SuccessCodes: []int{http.StatusOK},                                   // 200
+		FailureCodes: []int{http.StatusForbidden, http.StatusNotImplemented}, // 403/501
+	}
 	// RouteTagsList is the route descriptor for the tags to list.
 	RouteTagsList = RouteDescriptor{
 		ID:           "end-8a",

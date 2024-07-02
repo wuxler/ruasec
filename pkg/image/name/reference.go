@@ -109,7 +109,7 @@ func parseReference(name string, opts options) (Reference, error) {
 
 	remoteName := matches[1]
 	if scheme != "" {
-		remoteName = scheme + "://" + remoteName
+		remoteName = scheme + "://" + remoteName //nolint:goconst // skip constant required
 	}
 	repo, err := newRepository(remoteName, opts)
 	if err != nil {

@@ -2,11 +2,17 @@ package distribution
 
 import (
 	"context"
+	"errors"
 
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
 	imgname "github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/cas"
+)
+
+var (
+	// ErrIteratorDone indicates the iterator is complete.
+	ErrIteratorDone = errors.New("iterator done")
 )
 
 // Registry is the interface for a distribution registry.
@@ -21,7 +27,7 @@ type Registry interface {
 	Repository(ctx context.Context, path string) (Repository, error)
 
 	// ListRepositories lists the repositories.
-	ListRepositories(ctx context.Context, options ...ListOption) (Iterator[Repository], error)
+	ListRepositories(options ...ListOption) Iterator[Repository]
 }
 
 // Namespaced is the interface for a distibution registry who supports top-level namespace/project/organization
@@ -68,21 +74,23 @@ type TagStore interface {
 	// Untag removes the tag.
 	Untag(ctx context.Context, tag string) error
 	// List lists the tags.
-	List(ctx context.Context, options ...ListOption) Iterator[string]
+	List(options ...ListOption) Iterator[string]
 }
+
+var _ Iterator[string] = IteratorFunc[string](nil)
 
 // Iterator is the interface for list operation.
 type Iterator[T any] interface {
-	// Next called for next page.
-	Next() ([]T, error)
+	// Next called for next page. If no more items to iterate, returns error with [ErrIteratorDone].
+	Next(ctx context.Context) ([]T, error)
 }
 
 // IteratorFunc is a function that implements [Iterator].
-type IteratorFunc[T any] func() ([]T, error)
+type IteratorFunc[T any] func(context.Context) ([]T, error)
 
 // Next called for next page.
-func (fn IteratorFunc[T]) Next() ([]T, error) {
-	return fn()
+func (fn IteratorFunc[T]) Next(ctx context.Context) ([]T, error) {
+	return fn(ctx)
 }
 
 // ListOption used as optional parameters in list function.
@@ -108,4 +116,13 @@ func WithOffset(offset string) ListOption {
 	return func(o *ListOptions) {
 		o.Offset = offset
 	}
+}
+
+// MakeListOptions returns the list options with all optional parameters applied.
+func MakeListOptions(opts ...ListOption) *ListOptions {
+	var options ListOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+	return &options
 }

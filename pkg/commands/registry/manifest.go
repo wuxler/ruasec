@@ -14,6 +14,7 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
+	"github.com/wuxler/ruasec/pkg/errdefs"
 	"github.com/wuxler/ruasec/pkg/image/manifest"
 	"github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/cas"
@@ -236,7 +237,8 @@ func (c *ManifestDeleteCommand) Flags() []cli.Flag {
 
 // Run is the main function for the current command
 func (c *ManifestDeleteCommand) Run(ctx context.Context, cmd *cli.Command) error {
-	target, err := name.NewReference(cmd.Args().First())
+	rawTarget := cmd.Args().First()
+	target, err := name.NewReference(rawTarget)
 	if err != nil {
 		return err
 	}
@@ -250,6 +252,14 @@ func (c *ManifestDeleteCommand) Run(ctx context.Context, cmd *cli.Command) error
 	}
 	desc, err := repository.Manifests().StatTagOrDigest(ctx, tagOrDigest)
 	if err != nil {
+		if errors.Is(err, errdefs.ErrNotFound) {
+			if c.Force {
+				// ignore not found error when force flag is set
+				cmdhelper.Fprintf(cmd.Writer, "Skip, missing %q which is not found", rawTarget)
+				return nil
+			}
+			return fmt.Errorf("%s: %w", rawTarget, err)
+		}
 		return err
 	}
 	cmdhelper.Fprintf(cmd.Writer, `Found %s
