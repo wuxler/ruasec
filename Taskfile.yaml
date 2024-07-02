@@ -3,6 +3,18 @@ version: "3"
 vars:
   BIN: "{{.ROOT_DIR}}/bin"
   OUTPUT: "{{.ROOT_DIR}}/dist"
+  DATE: '{{ dateInZone "2006-01-02T15:04:05Z07:00" nil "Local" }}' # RFC3339
+  GIT_COMMIT:
+    sh: git rev-parse HEAD
+  GIT_BRANCH:
+    sh: git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD
+  GIT_TREE_STATE:
+    sh: if [ -z "$(git status --porcelain)" ]; then echo "clean"; else echo "dirty"; fi
+  GIT_EXACT_TAG:
+    sh: git describe --tags --exact-match 2> /dev/null || true
+  GIT_LATEST_TAG:
+    sh: git describe --tags --abbrev=0 2> /dev/null || true
+  GIT_TAG: "{{if .GIT_EXACT_TAG}}{{.GIT_EXACT_TAG}}{{else if .GIT_LATEST_TAG}}{{.GIT_LATEST_TAG}}-next{{end}}"
 
 env:
   CGO_ENABLED: "0"
@@ -13,12 +25,33 @@ tasks:
       - task: lint
       - task: test
 
+  vars:
+    desc: Output variables
+    silent: true
+    cmds:
+      - 'echo "DATE          : {{.DATE}}"'
+      - 'echo "GIT_COMMIT    : {{.GIT_COMMIT}}"'
+      - 'echo "GIT_BRANCH    : {{.GIT_BRANCH}}"'
+      - 'echo "GIT_TREE_STATE: {{.GIT_TREE_STATE}}"'
+      - 'echo "GIT_TAG       : {{.GIT_TAG}}"'
+
   build:
     desc: Build the application
+    vars:
+      VERSION: "{{if .GIT_EXACT_TAG}}{{.GIT_EXACT_TAG}}{{end}}"
+      LDFLAGS: >-
+        -w -s
+        -X github.com/wuxler/ruasec/pkg/appinfo.buildDate={{.DATE}}
+        -X github.com/wuxler/ruasec/pkg/appinfo.gitBranch={{.GIT_BRANCH}}
+        -X github.com/wuxler/ruasec/pkg/appinfo.gitCommit={{.GIT_COMMIT}}
+        -X github.com/wuxler/ruasec/pkg/appinfo.gitTag={{.GIT_TAG}}
+        -X github.com/wuxler/ruasec/pkg/appinfo.gitTreeState={{.GIT_TREE_STATE}}
+        {{if .VERSION}}-X github.com/wuxler/ruasec/pkg/appinfo.version={{.VERSION}}{{end}}
     sources:
       - ./**/*.go
+      - Taskfile.yaml
     cmds:
-      - go build -o {{.OUTPUT}}/rua{{exeExt}} ./cmd/rua
+      - go build -ldflags '{{.LDFLAGS}}' -o {{.OUTPUT}}/rua{{exeExt}} ./cmd/rua
 
   clean:
     desc: Clean temp files and folders
