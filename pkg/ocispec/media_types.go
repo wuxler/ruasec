@@ -1,4 +1,10 @@
-package manifest
+package ocispec
+
+import (
+	"encoding/json"
+
+	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
+)
 
 const (
 	// DefaultMediaType is the media type used when no media type is specified.
@@ -120,3 +126,81 @@ const (
 	// MediaTypeDockerV2S1ManifestLayer specifies the media type for manifest layers.
 	MediaTypeDockerV2S1ManifestLayer = "application/vnd.docker.container.image.rootfs.diff+x-gtar"
 )
+
+// DetectMediaType infers the manifest type from the given []byte and returns
+// the corresponding media type. If the type is unknown or unrecognized, it
+// returns an empty string.
+//
+// NOTE: Typically, we should directly obtain the media type externally rather
+// than inferring it through parsing. However, there might be situations where
+// it's not possible to obtain the manifest's media type externally, such as when
+// the manifest is a local file.
+func DetectMediaType(content []byte) string {
+	// A subset of manifest fields; the rest is silently ignored by json.Unmarshal.
+	// Also docker/distribution/manifest.Versioned.
+	meta := struct {
+		MediaType     string      `json:"mediaType"`
+		SchemaVersion int         `json:"schemaVersion"`
+		Signatures    interface{} `json:"signatures"`
+	}{}
+	if err := json.Unmarshal(content, &meta); err != nil {
+		return ""
+	}
+
+	switch meta.MediaType {
+	case MediaTypeDockerV2S2Manifest, MediaTypeDockerV2S2ManifestList,
+		MediaTypeImageManifest, MediaTypeImageIndex: // A recognized type.
+		return meta.MediaType
+	}
+
+	// this is the only way the function can return DockerV2Schema1MediaType,
+	// and recognizing that is essential for stripping the JWS signatures = computing
+	// the correct manifest digest.
+	switch meta.SchemaVersion {
+	case 1:
+		if meta.Signatures != nil {
+			return MediaTypeDockerV2S1SignedManifest
+		}
+		return MediaTypeDockerV2S1Manifest
+	case 2: //nolint:gomnd // skip magic number check
+		// Best effort to understand if this is an OCI image since mediaType
+		// wasn't in the manifest for OCI image-spec < 1.0.2.
+		// For docker v2s2 meta.MediaType should have been set. But given the data,
+		// this is our best guess.
+		ociManifest := struct {
+			Config struct {
+				MediaType string `json:"mediaType"`
+			} `json:"config"`
+		}{}
+		if err := json.Unmarshal(content, &ociManifest); err != nil {
+			return ""
+		}
+		switch ociManifest.Config.MediaType {
+		case MediaTypeImageConfig:
+			return MediaTypeImageManifest
+		case MediaTypeDockerV2S2ImageConfig:
+			// This case should not happen since a Docker image must declare
+			// a top-level media type and `meta.MediaType` has already been checked.
+			return MediaTypeDockerV2S2Manifest
+		}
+		// Maybe an image index or an OCI artifact.
+		ociIndex := struct {
+			Manifests []imgspecv1.Descriptor `json:"manifests"`
+		}{}
+		if err := json.Unmarshal(content, &ociIndex); err != nil {
+			return ""
+		}
+		if len(ociIndex.Manifests) != 0 {
+			if ociManifest.Config.MediaType == "" {
+				return MediaTypeImageIndex
+			}
+			// FIXME: this is mixing media types of manifests and configs.
+			return ociManifest.Config.MediaType
+		}
+		// It's most likely an OCI artifact with a custom config media
+		// type which is not (and cannot) be covered by the media-type
+		// checks cabove.
+		return MediaTypeImageManifest
+	}
+	return ""
+}

@@ -15,7 +15,7 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/wuxler/ruasec/pkg/errdefs"
-	"github.com/wuxler/ruasec/pkg/image/manifest"
+	"github.com/wuxler/ruasec/pkg/ocispec"
 )
 
 const (
@@ -83,7 +83,7 @@ func DescriptorFromResponse(resp *http.Response, knownDigest digest.Digest) (img
 	mediaType, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 	if err != nil {
 		// FIXME(wuxler): should we handle the error when the Content-Type is invalid ?
-		mediaType = manifest.DefaultMediaType
+		mediaType = ocispec.DefaultMediaType
 	}
 	// check Content-Length
 	var size int64

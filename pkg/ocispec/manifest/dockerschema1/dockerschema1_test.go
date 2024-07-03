@@ -9,8 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/wuxler/ruasec/pkg/image/manifest"
-	"github.com/wuxler/ruasec/pkg/image/manifest/dockerschema1"
+	"github.com/wuxler/ruasec/pkg/ocispec"
+	"github.com/wuxler/ruasec/pkg/ocispec/manifest"
+	"github.com/wuxler/ruasec/pkg/ocispec/manifest/dockerschema1"
 )
 
 func TestUnmarshalImageManifest(t *testing.T) {
@@ -24,43 +25,43 @@ func TestUnmarshalImageManifest(t *testing.T) {
 		{
 			input: "v2s1.manifest.json",
 			desc: imgspecv1.Descriptor{
-				MediaType: manifest.MediaTypeDockerV2S1SignedManifest,
+				MediaType: ocispec.MediaTypeDockerV2S1SignedManifest,
 				Size:      5480,
 				Digest:    "sha256:7364fea9d84ee548ab67d4c46c6006289800c98de3fbf8c0a97138dfcc23f000",
 			},
 			references: []imgspecv1.Descriptor{
 				// layers
 				{
-					MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+					MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 					Digest:    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 				},
 				{
-					MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+					MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 					Digest:    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 				},
 				{
-					MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+					MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 					Digest:    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 				},
 			},
 			layers: []manifest.LayerDescriptor{
 				{
 					Descriptor: imgspecv1.Descriptor{
-						MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+						MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 						Digest:    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 						Size:      -1,
 					},
 				},
 				{
 					Descriptor: imgspecv1.Descriptor{
-						MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+						MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 						Digest:    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 						Size:      -1,
 					},
 				},
 				{
 					Descriptor: imgspecv1.Descriptor{
-						MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+						MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 						Digest:    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 						Size:      -1,
 					},
@@ -70,43 +71,43 @@ func TestUnmarshalImageManifest(t *testing.T) {
 		{
 			input: "v2s1.manifest.unsigned.json",
 			desc: imgspecv1.Descriptor{
-				MediaType: manifest.MediaTypeDockerV2S1Manifest,
+				MediaType: ocispec.MediaTypeDockerV2S1Manifest,
 				Size:      5480,
 				Digest:    "sha256:7364fea9d84ee548ab67d4c46c6006289800c98de3fbf8c0a97138dfcc23f000",
 			},
 			references: []imgspecv1.Descriptor{
 				// layers
 				{
-					MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+					MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 					Digest:    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 				},
 				{
-					MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+					MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 					Digest:    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 				},
 				{
-					MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+					MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 					Digest:    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 				},
 			},
 			layers: []manifest.LayerDescriptor{
 				{
 					Descriptor: imgspecv1.Descriptor{
-						MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+						MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 						Digest:    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 						Size:      -1,
 					},
 				},
 				{
 					Descriptor: imgspecv1.Descriptor{
-						MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+						MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 						Digest:    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 						Size:      -1,
 					},
 				},
 				{
 					Descriptor: imgspecv1.Descriptor{
-						MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+						MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 						Digest:    "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
 						Size:      -1,
 					},

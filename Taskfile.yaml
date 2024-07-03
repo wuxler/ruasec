@@ -2,6 +2,7 @@ version: "3"
 
 vars:
   BIN: "{{.ROOT_DIR}}/bin"
+  BIN_PREFIX: "env PATH={{.BIN}}:$PATH"
   OUTPUT: "{{.ROOT_DIR}}/dist"
   DATE: '{{ dateInZone "2006-01-02T15:04:05Z07:00" nil "Local" }}' # RFC3339
   GIT_COMMIT:
@@ -68,7 +69,7 @@ tasks:
     desc: Generate code
     deps: [install:gomock]
     cmds:
-      - go generate ./...
+      - "{{.BIN_PREFIX}} go generate ./..."
 
   vet:
     desc: Run go vet against code
@@ -87,13 +88,13 @@ tasks:
     aliases: [l]
     deps: [install:golangci-lint]
     cmds:
-      - "{{.BIN}}/golangci-lint run --verbose --concurrency 4 --timeout 5m --skip-dirs-use-default"
+      - "{{.BIN_PREFIX}} golangci-lint run --verbose --concurrency 4 --timeout 5m --skip-dirs-use-default"
 
   lint:fix:
     desc: Run golangci-lint and fixes linting issues automatically
     deps: [install:golangci-lint]
     cmds:
-      - "{{.BIN}}/golangci-lint run --verbose --concurrency 4 --timeout 5m --skip-dirs-use-default --fix"
+      - "{{.BIN_PREFIX}} golangci-lint run --verbose --concurrency 4 --timeout 5m --skip-dirs-use-default --fix"
 
   install:tools:
     desc: Install all dependent tools

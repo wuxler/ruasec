@@ -1,25 +1,32 @@
-package ocischema
+package dockerschema2
 
 import (
 	"encoding/json"
 
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/wuxler/ruasec/pkg/image/manifest"
+	"github.com/wuxler/ruasec/pkg/ocispec/manifest"
 )
 
 var (
 	_ manifest.ImageManifest = (*DeserializedManifest)(nil)
 )
 
-// Manifest wraps imgspecv1.Manifest.
+// Manifest defines a docker version2 schema2 manifest.
 type Manifest struct {
-	imgspecv1.Manifest
+	manifest.Versioned
+
+	// Config references the image configuration as a blob.
+	Config imgspecv1.Descriptor `json:"config"`
+
+	// Layers lists descriptors for the layers referenced by the
+	// configuration.
+	Layers []imgspecv1.Descriptor `json:"layers"`
 }
 
 // MediaType returns the media type of current manifest object.
 func (m Manifest) MediaType() string {
-	return m.Manifest.MediaType
+	return m.Versioned.MediaType
 }
 
 // References returns a list of objects which make up this manifest.
@@ -30,13 +37,13 @@ func (m Manifest) MediaType() string {
 // them from highest to lowest priority. For example, one might want to
 // return the base layer before the top layer.
 func (m Manifest) References() []imgspecv1.Descriptor {
-	references := make([]imgspecv1.Descriptor, 0, 1+len(m.Manifest.Layers))
-	references = append(references, m.Manifest.Config)
-	references = append(references, m.Manifest.Layers...)
+	references := make([]imgspecv1.Descriptor, 0, 1+len(m.Layers))
+	references = append(references, m.Config)
+	references = append(references, m.Layers...)
 	return references
 }
 
-// DeserializedManifest wraps Manifest with a copy of the original
+// DeserializedManifest wraps ManifestList with a copy of the original
 // JSON.
 type DeserializedManifest struct {
 	Manifest
@@ -74,9 +81,7 @@ func (m *DeserializedManifest) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(m.canonical, &shallow); err != nil {
 		return err
 	}
-	if shallow.Manifest.MediaType == "" {
-		shallow.Manifest.MediaType = manifest.MediaTypeImageManifest
-	}
+
 	m.Manifest = shallow
 
 	return nil

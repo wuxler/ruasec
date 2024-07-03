@@ -5,11 +5,12 @@ import (
 
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/wuxler/ruasec/pkg/image/manifest"
+	"github.com/wuxler/ruasec/pkg/ocispec"
+	"github.com/wuxler/ruasec/pkg/ocispec/manifest"
 )
 
 var (
-	_ manifest.IndexManifest = (*DeserializedIndexManifest)(nil)
+	_ ocispec.IndexManifest = (*DeserializedIndexManifest)(nil)
 )
 
 // IndexManifest wraps imgspecv1.Index.
@@ -54,7 +55,7 @@ func (m *DeserializedIndexManifest) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	if shallow.Index.MediaType == "" {
-		shallow.Index.MediaType = manifest.MediaTypeImageIndex
+		shallow.Index.MediaType = ocispec.MediaTypeImageIndex
 	}
 
 	m.IndexManifest = shallow

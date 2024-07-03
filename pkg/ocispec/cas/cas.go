@@ -7,12 +7,7 @@ import (
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
-// Describable defines a resource that can be described.
-type Describable interface {
-	// Descriptor returns the descriptor for the resource.
-	Descriptor() imgspecv1.Descriptor
-}
-
+// Storage is the interface for a Content Addressable Storage.
 type Storage interface {
 	// Stat returns the descriptor for the given reference.
 	Stat(ctx context.Context, reference string) (imgspecv1.Descriptor, error)

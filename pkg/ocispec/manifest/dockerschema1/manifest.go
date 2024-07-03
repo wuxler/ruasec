@@ -5,11 +5,14 @@ import (
 	"errors"
 	"regexp"
 	"slices"
+	"time"
 
 	"github.com/containers/libtrust"
+	"github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/wuxler/ruasec/pkg/image/manifest"
+	"github.com/wuxler/ruasec/pkg/ocispec"
+	"github.com/wuxler/ruasec/pkg/ocispec/manifest"
 )
 
 var (
@@ -50,7 +53,7 @@ func (m SignedManifest) References() []imgspecv1.Descriptor {
 	dependencies := []imgspecv1.Descriptor{}
 	for i := range m.FSLayers {
 		dependencies = append(dependencies, imgspecv1.Descriptor{
-			MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+			MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 			Digest:    m.FSLayers[i].BlobSum,
 		})
 	}
@@ -71,7 +74,7 @@ func (m SignedManifest) Layers() []manifest.LayerDescriptor {
 		// NOTE: This includes empty layers (where m.History.V1Compatibility->ThrowAway)
 		layers[(len(m.FSLayers)-1)-i] = manifest.LayerDescriptor{
 			Descriptor: imgspecv1.Descriptor{
-				MediaType: manifest.MediaTypeDockerV2S1ManifestLayer,
+				MediaType: ocispec.MediaTypeDockerV2S1ManifestLayer,
 				Digest:    layer.BlobSum,
 				Size:      -1,
 			},
@@ -97,11 +100,11 @@ func (m *SignedManifest) UnmarshalJSON(b []byte) error {
 			return perr
 		}
 		payload = bytes
-		mediaType = manifest.MediaTypeDockerV2S1SignedManifest
+		mediaType = ocispec.MediaTypeDockerV2S1SignedManifest
 	} else if errors.Is(err, libtrust.ErrMissingSignatureKey) {
 		// If there are no signatures, just use the raw manifest.
 		payload = b
-		mediaType = manifest.MediaTypeDockerV2S1Manifest
+		mediaType = ocispec.MediaTypeDockerV2S1Manifest
 	} else {
 		return err
 	}
@@ -220,4 +223,70 @@ func (m *SignedManifest) Signatures() ([][]byte, error) {
 
 	// Resolve the payload in the manifest.
 	return jsig.Signatures()
+}
+
+// Manifest provides the base accessible fields for working with V2 image
+// format in the registry.
+//
+// Deprecated: Docker Image Manifest v2, Schema 1 is deprecated since 2015.
+// Use Docker Image Manifest v2, Schema 2, or the OCI Image Specification.
+type Manifest struct {
+	manifest.Versioned
+
+	// Name is the name of the image's repository
+	Name string `json:"name"`
+
+	// Tag is the tag of the image specified by this manifest
+	Tag string `json:"tag"`
+
+	// Architecture is the host architecture on which this image is intended to
+	// run
+	Architecture string `json:"architecture"`
+
+	// FSLayers is a list of filesystem layer blobSums contained in this image
+	FSLayers []FSLayer `json:"fsLayers"`
+
+	// History is a list of unstructured historical data for v1 compatibility
+	History []History `json:"history"`
+}
+
+// FSLayer is a container struct for BlobSums defined in an image manifest.
+//
+// Deprecated: Docker Image Manifest v2, Schema 1 is deprecated since 2015.
+// Use Docker Image Manifest v2, Schema 2, or the OCI Image Specification.
+type FSLayer struct {
+	// BlobSum is the tarsum of the referenced filesystem image layer
+	BlobSum digest.Digest `json:"blobSum"`
+}
+
+// History stores unstructured v1 compatibility information.
+//
+// Deprecated: Docker Image Manifest v2, Schema 1 is deprecated since 2015.
+// Use Docker Image Manifest v2, Schema 2, or the OCI Image Specification.
+type History struct {
+	// V1Compatibility is the raw v1 compatibility information
+	V1Compatibility string `json:"v1Compatibility"`
+}
+
+// V1CompatibilityContainerConfig is a v1Compatibility container config in
+// docker/distribution schema 1.
+//
+// Deprecated: Docker Image Manifest v2, Schema 1 is deprecated since 2015.
+// Use Docker Image Manifest v2, Schema 2, or the OCI Image Specification.
+type V1CompatibilityContainerConfig struct {
+	Cmd []string
+}
+
+// V1Compatibility is a v1Compatibility in docker/distribution schema 1.
+//
+// Deprecated: Docker Image Manifest v2, Schema 1 is deprecated since 2015.
+// Use Docker Image Manifest v2, Schema 2, or the OCI Image Specification.
+type V1Compatibility struct {
+	ID              string                         `json:"id"`
+	Parent          string                         `json:"parent,omitempty"`
+	Comment         string                         `json:"comment,omitempty"`
+	Created         time.Time                      `json:"created"`
+	ContainerConfig V1CompatibilityContainerConfig `json:"container_config,omitempty"`
+	Author          string                         `json:"author,omitempty"`
+	ThrowAway       bool                           `json:"throwaway,omitempty"`
 }

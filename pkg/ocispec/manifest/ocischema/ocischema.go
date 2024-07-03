@@ -1,28 +1,21 @@
-// Package dockerschema2 provides a type for parsing and serializing Docker Schema 2 manifest files.
-package dockerschema2
+package ocischema
 
 import (
 	"github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/wuxler/ruasec/pkg/image/manifest"
+	"github.com/wuxler/ruasec/pkg/ocispec"
+	"github.com/wuxler/ruasec/pkg/ocispec/manifest"
 )
 
-func init() {
-	// register image manifest
-	manifest.MustRegisterSchema(manifest.MediaTypeDockerV2S2Manifest, UnmarshalImageManifest)
-	// register manifest list
-	manifest.MustRegisterSchema(manifest.MediaTypeDockerV2S2ManifestList, UnmarshalManifestList)
-}
-
-// UnmarshalImageManifest parses a Docker image manifest from the given byte slice.
-func UnmarshalImageManifest(b []byte) (manifest.Manifest, imgspecv1.Descriptor, error) {
+// UnmarshalImageManifest unmarshals an image manifest.
+func UnmarshalImageManifest(b []byte) (ocispec.Manifest, imgspecv1.Descriptor, error) {
 	m := &DeserializedManifest{}
 	if err := m.UnmarshalJSON(b); err != nil {
 		return nil, imgspecv1.Descriptor{}, err
 	}
 
-	expectMediaType := manifest.MediaTypeDockerV2S2Manifest
+	expectMediaType := ocispec.MediaTypeImageManifest
 	if err := manifest.ValidateUnambiguousManifestFormat(
 		b,
 		expectMediaType,
@@ -40,14 +33,14 @@ func UnmarshalImageManifest(b []byte) (manifest.Manifest, imgspecv1.Descriptor, 
 	return m, desc, nil
 }
 
-// UnmarshalManifestList parses a Docker image manifest list from the given byte slice.
-func UnmarshalManifestList(b []byte) (manifest.Manifest, imgspecv1.Descriptor, error) {
-	m := &DeserializedManifestList{}
+// UnmarshalIndexManifest unmarshals an image index manifest.
+func UnmarshalIndexManifest(b []byte) (ocispec.Manifest, imgspecv1.Descriptor, error) {
+	m := &DeserializedIndexManifest{}
 	if err := m.UnmarshalJSON(b); err != nil {
 		return nil, imgspecv1.Descriptor{}, err
 	}
 
-	expectMediaType := manifest.MediaTypeDockerV2S2ManifestList
+	expectMediaType := ocispec.MediaTypeImageIndex
 	if err := manifest.ValidateUnambiguousManifestFormat(
 		b,
 		expectMediaType,

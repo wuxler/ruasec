@@ -7,18 +7,12 @@ import (
 	"github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/wuxler/ruasec/pkg/image/manifest"
+	"github.com/wuxler/ruasec/pkg/ocispec"
+	"github.com/wuxler/ruasec/pkg/ocispec/manifest"
 )
 
-func init() {
-	manifest.MustRegisterSchema(manifest.MediaTypeDockerV2S1Manifest, UnmarshalImageManifest)
-	manifest.MustRegisterSchema(manifest.MediaTypeDockerV2S1SignedManifest, UnmarshalImageManifest)
-	manifest.MustRegisterSchema("application/json", UnmarshalImageManifest)
-	manifest.MustRegisterSchema("", UnmarshalImageManifest) // default schema
-}
-
 // UnmarshalImageManifest parses a Docker Schema 1 manifest file.
-func UnmarshalImageManifest(b []byte) (manifest.Manifest, imgspecv1.Descriptor, error) {
+func UnmarshalImageManifest(b []byte) (ocispec.Manifest, imgspecv1.Descriptor, error) {
 	m := &SignedManifest{}
 	if err := m.UnmarshalJSON(b); err != nil {
 		return nil, imgspecv1.Descriptor{}, err

@@ -1,32 +1,26 @@
-package dockerschema2
+package ocischema
 
 import (
 	"encoding/json"
 
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/wuxler/ruasec/pkg/image/manifest"
+	"github.com/wuxler/ruasec/pkg/ocispec"
+	"github.com/wuxler/ruasec/pkg/ocispec/manifest"
 )
 
 var (
 	_ manifest.ImageManifest = (*DeserializedManifest)(nil)
 )
 
-// Manifest defines a docker version2 schema2 manifest.
+// Manifest wraps imgspecv1.Manifest.
 type Manifest struct {
-	manifest.Versioned
-
-	// Config references the image configuration as a blob.
-	Config imgspecv1.Descriptor `json:"config"`
-
-	// Layers lists descriptors for the layers referenced by the
-	// configuration.
-	Layers []imgspecv1.Descriptor `json:"layers"`
+	imgspecv1.Manifest
 }
 
 // MediaType returns the media type of current manifest object.
 func (m Manifest) MediaType() string {
-	return m.Versioned.MediaType
+	return m.Manifest.MediaType
 }
 
 // References returns a list of objects which make up this manifest.
@@ -37,13 +31,13 @@ func (m Manifest) MediaType() string {
 // them from highest to lowest priority. For example, one might want to
 // return the base layer before the top layer.
 func (m Manifest) References() []imgspecv1.Descriptor {
-	references := make([]imgspecv1.Descriptor, 0, 1+len(m.Layers))
-	references = append(references, m.Config)
-	references = append(references, m.Layers...)
+	references := make([]imgspecv1.Descriptor, 0, 1+len(m.Manifest.Layers))
+	references = append(references, m.Manifest.Config)
+	references = append(references, m.Manifest.Layers...)
 	return references
 }
 
-// DeserializedManifest wraps ManifestList with a copy of the original
+// DeserializedManifest wraps Manifest with a copy of the original
 // JSON.
 type DeserializedManifest struct {
 	Manifest
@@ -81,7 +75,9 @@ func (m *DeserializedManifest) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(m.canonical, &shallow); err != nil {
 		return err
 	}
-
+	if shallow.Manifest.MediaType == "" {
+		shallow.Manifest.MediaType = ocispec.MediaTypeImageManifest
+	}
 	m.Manifest = shallow
 
 	return nil

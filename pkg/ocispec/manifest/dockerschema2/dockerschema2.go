@@ -1,28 +1,21 @@
-// Package ocischema implements the OCI image manifest schema.
-package ocischema
+package dockerschema2
 
 import (
 	"github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/wuxler/ruasec/pkg/image/manifest"
+	"github.com/wuxler/ruasec/pkg/ocispec"
+	"github.com/wuxler/ruasec/pkg/ocispec/manifest"
 )
 
-func init() {
-	// register image manifest
-	manifest.MustRegisterSchema(manifest.MediaTypeImageManifest, UnmarshalImageManifest)
-	// register image index manifest
-	manifest.MustRegisterSchema(manifest.MediaTypeImageIndex, UnmarshalIndexManifest)
-}
-
-// UnmarshalImageManifest unmarshals an image manifest.
-func UnmarshalImageManifest(b []byte) (manifest.Manifest, imgspecv1.Descriptor, error) {
+// UnmarshalImageManifest parses a Docker image manifest from the given byte slice.
+func UnmarshalImageManifest(b []byte) (ocispec.Manifest, imgspecv1.Descriptor, error) {
 	m := &DeserializedManifest{}
 	if err := m.UnmarshalJSON(b); err != nil {
 		return nil, imgspecv1.Descriptor{}, err
 	}
 
-	expectMediaType := manifest.MediaTypeImageManifest
+	expectMediaType := ocispec.MediaTypeDockerV2S2Manifest
 	if err := manifest.ValidateUnambiguousManifestFormat(
 		b,
 		expectMediaType,
@@ -40,14 +33,14 @@ func UnmarshalImageManifest(b []byte) (manifest.Manifest, imgspecv1.Descriptor, 
 	return m, desc, nil
 }
 
-// UnmarshalIndexManifest unmarshals an image index manifest.
-func UnmarshalIndexManifest(b []byte) (manifest.Manifest, imgspecv1.Descriptor, error) {
-	m := &DeserializedIndexManifest{}
+// UnmarshalManifestList parses a Docker image manifest list from the given byte slice.
+func UnmarshalManifestList(b []byte) (ocispec.Manifest, imgspecv1.Descriptor, error) {
+	m := &DeserializedManifestList{}
 	if err := m.UnmarshalJSON(b); err != nil {
 		return nil, imgspecv1.Descriptor{}, err
 	}
 
-	expectMediaType := manifest.MediaTypeImageIndex
+	expectMediaType := ocispec.MediaTypeDockerV2S2ManifestList
 	if err := manifest.ValidateUnambiguousManifestFormat(
 		b,
 		expectMediaType,

@@ -3,18 +3,18 @@ package remote
 import (
 	"strings"
 
-	"github.com/wuxler/ruasec/pkg/image/manifest"
+	"github.com/wuxler/ruasec/pkg/ocispec"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
 )
 
 var (
 	defaultRequestedManifestMediaTypes = []string{
-		manifest.MediaTypeDockerV2S2Manifest,
-		manifest.MediaTypeDockerV2S2ManifestList,
-		manifest.MediaTypeImageManifest,
-		manifest.MediaTypeImageIndex,
-		manifest.MediaTypeDockerV2S1Manifest,
-		manifest.MediaTypeDockerV2S1SignedManifest,
+		ocispec.MediaTypeDockerV2S2Manifest,
+		ocispec.MediaTypeDockerV2S2ManifestList,
+		ocispec.MediaTypeImageManifest,
+		ocispec.MediaTypeImageIndex,
+		ocispec.MediaTypeDockerV2S1Manifest,
+		ocispec.MediaTypeDockerV2S1SignedManifest,
 	}
 )
 

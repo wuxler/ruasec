@@ -6,11 +6,12 @@ import (
 
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/wuxler/ruasec/pkg/image/manifest"
+	"github.com/wuxler/ruasec/pkg/ocispec"
+	"github.com/wuxler/ruasec/pkg/ocispec/manifest"
 )
 
 var (
-	_ manifest.IndexManifest = (*DeserializedManifestList)(nil)
+	_ ocispec.IndexManifest = (*DeserializedManifestList)(nil)
 )
 
 // ManifestList references manifests for various platforms.

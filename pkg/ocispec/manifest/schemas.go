@@ -6,10 +6,12 @@ import (
 	"sync"
 
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
+
+	"github.com/wuxler/ruasec/pkg/ocispec"
 )
 
 // UnmarshalFunc implements manifest unmarshalling a given MediaType
-type UnmarshalFunc func([]byte) (Manifest, imgspecv1.Descriptor, error)
+type UnmarshalFunc func([]byte) (ocispec.Manifest, imgspecv1.Descriptor, error)
 
 var (
 	schemas = make(map[string]UnmarshalFunc)

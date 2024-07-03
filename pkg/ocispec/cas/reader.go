@@ -8,12 +8,12 @@ import (
 	"github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/wuxler/ruasec/pkg/image/manifest"
+	"github.com/wuxler/ruasec/pkg/ocispec"
 )
 
 // Reader means the io.Reader is describable.
 type Reader interface {
-	Describable
+	ocispec.Describable
 	io.Reader
 }
 
@@ -36,7 +36,7 @@ func NewReaderSkipVerify(r io.Reader, desc imgspecv1.Descriptor) Reader {
 // NewReaderFromBytes returns a Reader, given the content and media type.
 // If no media type is specified, "application/octet-stream" will be used.
 func NewReaderFromBytes(mediaType string, content []byte) Reader {
-	desc := manifest.NewDescriptorFromBytes(mediaType, content)
+	desc := ocispec.NewDescriptorFromBytes(mediaType, content)
 	return NewReader(bytes.NewReader(content), desc)
 }
 

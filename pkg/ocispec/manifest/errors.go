@@ -2,7 +2,8 @@ package manifest
 
 import (
 	"errors"
-	"fmt"
+
+	"github.com/wuxler/ruasec/pkg/errdefs"
 )
 
 var (
@@ -16,10 +17,10 @@ var (
 
 // NewErrNotInitialized creates a new error with ErrNotInitialized as the root cause.
 func NewErrNotInitialized(format string, args ...any) error {
-	return errors.Join(ErrNotInitialized, fmt.Errorf(format, args...))
+	return errdefs.Newf(ErrNotInitialized, format, args...)
 }
 
 // NewErrInvalidField creates a new error with ErrInvalidField as the root cause.
 func NewErrInvalidField(format string, args ...any) error {
-	return errors.Join(ErrInvalidField, fmt.Errorf(format, args...))
+	return errdefs.Newf(ErrInvalidField, format, args...)
 }

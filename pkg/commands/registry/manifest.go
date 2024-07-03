@@ -15,8 +15,8 @@ import (
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
 	"github.com/wuxler/ruasec/pkg/errdefs"
-	"github.com/wuxler/ruasec/pkg/image/manifest"
 	"github.com/wuxler/ruasec/pkg/image/name"
+	"github.com/wuxler/ruasec/pkg/ocispec"
 	"github.com/wuxler/ruasec/pkg/ocispec/cas"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 )
@@ -366,8 +366,8 @@ func (c *ManifestPushCommand) Run(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return fmt.Errorf("failed to read %s: %w", file, err)
 	}
-	mediaType := manifest.DetectMediaType(fileContent)
-	desc := manifest.NewDescriptorFromBytes(mediaType, fileContent)
+	mediaType := ocispec.DetectMediaType(fileContent)
+	desc := ocispec.NewDescriptorFromBytes(mediaType, fileContent)
 
 	cmdhelper.Fprintf(cmd.Writer, `Descriptor:
   - MediaType: %s
