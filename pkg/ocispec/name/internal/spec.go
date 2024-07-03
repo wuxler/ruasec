@@ -3,7 +3,7 @@ package internal
 import (
 	"regexp"
 
-	"github.com/wuxler/ruasec/pkg/image/name/internal/xregexp"
+	"github.com/wuxler/ruasec/pkg/util/xregexp"
 )
 
 var (

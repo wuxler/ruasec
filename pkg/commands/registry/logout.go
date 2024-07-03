@@ -10,9 +10,9 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
-	"github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/authfile"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/credentials"
+	"github.com/wuxler/ruasec/pkg/ocispec/name"
 )
 
 // NewLogoutCommand returns a LogoutCommand with default values.

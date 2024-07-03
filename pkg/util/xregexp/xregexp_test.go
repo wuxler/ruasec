@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/wuxler/ruasec/pkg/image/name/internal/xregexp"
+	"github.com/wuxler/ruasec/pkg/util/xregexp"
 )
 
 func TestSubmatchCaptures(t *testing.T) {

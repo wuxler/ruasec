@@ -6,8 +6,8 @@ import (
 
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	imgname "github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/cas"
+	"github.com/wuxler/ruasec/pkg/ocispec/name"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 // Registry is the interface for a distribution registry.
 type Registry interface {
 	// Named returns the name of the registry.
-	Named() imgname.Registry
+	Named() name.Registry
 
 	// Ping checks registry is accessible.
 	Ping(ctx context.Context) error
@@ -42,7 +42,7 @@ type Namespaced interface {
 // Repository is the interface for a distribution repository.
 type Repository interface {
 	// Named returns the name of the repository.
-	Named() imgname.Repository
+	Named() name.Repository
 	// Manifests returns a reference to this repository's manifest storage.
 	Manifests() ManifestStore
 	// Tags returns a reference to this repository's tag storage.

@@ -14,10 +14,10 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/wuxler/ruasec/pkg/errdefs"
-	imgname "github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
 	"github.com/wuxler/ruasec/pkg/ocispec/cas"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
+	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 )
 
@@ -32,7 +32,7 @@ func NewRepository(name string, opts ...Option) (distribution.Repository, error)
 // The name should contains the registry address if the target repository is not deployed
 // at DockerHub.
 func NewRepositoryWithContext(ctx context.Context, name string, opts ...Option) (distribution.Repository, error) {
-	repoName, err := imgname.NewRepository(name)
+	repoName, err := ocispecname.NewRepository(name)
 	if err != nil {
 		return nil, err
 	}
@@ -45,11 +45,11 @@ func NewRepositoryWithContext(ctx context.Context, name string, opts ...Option) 
 
 type Repository struct {
 	*Registry
-	name imgname.Repository
+	name ocispecname.Repository
 }
 
 // Named returns the name of the repository.
-func (repo *Repository) Named() imgname.Repository {
+func (repo *Repository) Named() ocispecname.Repository {
 	return repo.name
 }
 

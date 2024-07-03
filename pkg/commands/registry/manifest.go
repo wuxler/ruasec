@@ -15,9 +15,9 @@ import (
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
 	"github.com/wuxler/ruasec/pkg/errdefs"
-	"github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec"
 	"github.com/wuxler/ruasec/pkg/ocispec/cas"
+	"github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 )
 

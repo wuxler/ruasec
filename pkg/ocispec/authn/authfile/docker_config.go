@@ -14,8 +14,8 @@ import (
 
 	"github.com/smallnest/deepcopy"
 
-	"github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
+	"github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 	"github.com/wuxler/ruasec/pkg/xlog"
 )

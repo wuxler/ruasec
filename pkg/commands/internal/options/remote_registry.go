@@ -10,9 +10,9 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
-	imgname "github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
+	"github.com/wuxler/ruasec/pkg/ocispec/name"
 )
 
 // NewRemoteRegistryOptions returns a *RemoteRegistryOptions with default values.
@@ -96,7 +96,7 @@ func (o *RemoteRegistryOptions) NewDistributionClient() (*distribution.Client, e
 }
 
 // NewRepository returns the remote repository client for the target named.
-func (o *RemoteRegistryOptions) NewRepository(ctx context.Context, target imgname.Repository) (distribution.Repository, error) {
+func (o *RemoteRegistryOptions) NewRepository(ctx context.Context, target name.Repository) (distribution.Repository, error) {
 	client, err := o.NewDistributionClient()
 	if err != nil {
 		return nil, err

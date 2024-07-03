@@ -7,7 +7,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/wuxler/ruasec/pkg/image/name"
+	"github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/homedir"
 )
 

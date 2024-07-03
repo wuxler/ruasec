@@ -8,9 +8,9 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
-	"github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
+	"github.com/wuxler/ruasec/pkg/ocispec/name"
 )
 
 // NewRepositoryCommand returns a command with default values.

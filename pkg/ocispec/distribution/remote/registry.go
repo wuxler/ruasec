@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/wuxler/ruasec/pkg/errdefs"
-	imgname "github.com/wuxler/ruasec/pkg/image/name"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
+	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 )
 
@@ -25,7 +25,7 @@ func NewRegistry(addr string, opts ...Option) (distribution.Registry, error) {
 // NewRegistryWithContext creates a client for the remote registry with the context.
 func NewRegistryWithContext(ctx context.Context, addr string, opts ...Option) (distribution.Registry, error) {
 	options := MakeOptions(opts...)
-	name, err := imgname.NewRegistry(addr)
+	name, err := ocispecname.NewRegistry(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func NewRegistryWithContext(ctx context.Context, addr string, opts ...Option) (d
 
 // Registry is the client implementation of the [distribution.Registry] interface.
 type Registry struct {
-	name   imgname.Registry
+	name   ocispecname.Registry
 	client distribution.HTTPClient
 }
 
@@ -54,7 +54,7 @@ func (r *Registry) builder() *distribution.RouteBuilder {
 }
 
 // Named returns the name of the registry.
-func (r *Registry) Named() imgname.Registry {
+func (r *Registry) Named() ocispecname.Registry {
 	return r.name
 }
 
@@ -75,7 +75,7 @@ func (r *Registry) Ping(ctx context.Context) error {
 
 // Repository returns the [Repository] by the given name.
 func (r *Registry) Repository(_ context.Context, path string) (distribution.Repository, error) {
-	repoName, err := imgname.WithPath(r.name, path)
+	repoName, err := ocispecname.WithPath(r.name, path)
 	if err != nil {
 		return nil, err
 	}

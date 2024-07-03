@@ -7,7 +7,7 @@ import (
 	"github.com/opencontainers/go-digest"
 
 	"github.com/wuxler/ruasec/pkg/errdefs"
-	"github.com/wuxler/ruasec/pkg/image/name/internal"
+	"github.com/wuxler/ruasec/pkg/ocispec/name/internal"
 )
 
 const (

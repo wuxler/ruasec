@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/wuxler/ruasec/pkg/errdefs"
-	"github.com/wuxler/ruasec/pkg/image/name/internal"
-	"github.com/wuxler/ruasec/pkg/image/name/internal/xregexp"
+	"github.com/wuxler/ruasec/pkg/ocispec/name/internal"
+	"github.com/wuxler/ruasec/pkg/util/xregexp"
 )
 
 var (

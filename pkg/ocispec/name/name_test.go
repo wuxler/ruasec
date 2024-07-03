@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/wuxler/ruasec/pkg/image/name"
+	"github.com/wuxler/ruasec/pkg/ocispec/name"
 )
 
 func subTestName(tName string, good bool, notes ...string) string {
