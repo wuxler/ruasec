@@ -9,7 +9,7 @@ require (
 	github.com/maypok86/otter v1.2.1
 	github.com/opencontainers/go-digest v1.0.1-0.20231212064514-429d0316a3dd
 	github.com/opencontainers/image-spec v1.1.0
-	github.com/samber/lo v1.44.0
+	github.com/samber/lo v1.45.0
 	github.com/smallnest/deepcopy v1.0.0
 	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.9.0
