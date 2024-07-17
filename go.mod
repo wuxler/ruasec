@@ -6,6 +6,9 @@ require (
 	github.com/benbjohnson/clock v1.3.5
 	github.com/containerd/platforms v0.2.1
 	github.com/containers/libtrust v0.0.0-20230121012942-c1716e8a8d01
+	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707
+	github.com/klauspost/compress v1.17.9
+	github.com/klauspost/pgzip v1.2.6
 	github.com/manifoldco/promptui v0.9.0
 	github.com/maypok86/otter v1.2.1
 	github.com/opencontainers/go-digest v1.0.1-0.20231212064514-429d0316a3dd
@@ -14,6 +17,8 @@ require (
 	github.com/smallnest/deepcopy v1.0.0
 	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.9.0
+	github.com/therootcompany/xz v1.0.1
+	github.com/ulikunitz/xz v0.5.12
 	github.com/urfave/cli/v3 v3.0.0-alpha9
 	go.uber.org/mock v0.4.0
 	golang.org/x/sync v0.7.0
