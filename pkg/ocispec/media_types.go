@@ -2,8 +2,14 @@ package ocispec
 
 import (
 	"encoding/json"
+	"fmt"
 
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
+
+	"github.com/wuxler/ruasec/pkg/util/xio/compression"
+	"github.com/wuxler/ruasec/pkg/util/xio/compression/gzip"
+	"github.com/wuxler/ruasec/pkg/util/xio/compression/tar"
+	"github.com/wuxler/ruasec/pkg/util/xio/compression/zstd"
 )
 
 const (
@@ -223,4 +229,37 @@ func IsCompressedBlob(mt string) bool {
 		return true
 	}
 	return false
+}
+
+var (
+	ociImageLayerMap = map[string]string{
+		MediaTypeImageLayer:                     MediaTypeImageLayer,
+		MediaTypeImageLayerGzip:                 MediaTypeImageLayerGzip,
+		MediaTypeImageLayerZstd:                 MediaTypeImageLayerZstd,
+		MediaTypeImageLayerNonDistributable:     MediaTypeImageLayerNonDistributable,
+		MediaTypeImageLayerNonDistributableGzip: MediaTypeImageLayerNonDistributableGzip,
+		MediaTypeImageLayerNonDistributableZstd: MediaTypeImageLayerNonDistributableZstd,
+
+		MediaTypeDockerV2S1ManifestLayer: MediaTypeImageLayerGzip,
+
+		MediaTypeDockerV2S2ImageLayer:            MediaTypeImageLayer,
+		MediaTypeDockerV2S2ImageLayerGzip:        MediaTypeImageLayerGzip,
+		MediaTypeDockerV2S2ForeignImageLayer:     MediaTypeImageLayerNonDistributable,
+		MediaTypeDockerV2S2ForeignImageLayerGzip: MediaTypeImageLayerNonDistributableGzip,
+	}
+)
+
+// CompressionFormatFromMediaType returns the compression format from the media type.
+func CompressionFormatFromMediaType(mediaType string) (compression.Format, error) {
+	converted := ociImageLayerMap[mediaType]
+	switch converted {
+	case MediaTypeImageLayer, MediaTypeImageLayerNonDistributable:
+		return compression.GetFormat(tar.FormatName)
+	case MediaTypeImageLayerGzip, MediaTypeImageLayerNonDistributableGzip:
+		return compression.GetFormat(gzip.FormatName)
+	case MediaTypeImageLayerZstd, MediaTypeImageLayerNonDistributableZstd:
+		return compression.GetFormat(zstd.FormatName)
+	default:
+		return nil, fmt.Errorf("unsupported media type %q", mediaType)
+	}
 }
