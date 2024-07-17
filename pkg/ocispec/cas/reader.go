@@ -2,6 +2,7 @@ package cas
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 
@@ -22,6 +23,12 @@ type ReadCloser interface {
 	Reader
 	io.Closer
 }
+
+// ReaderGetter is a functional type to get [Reader]
+type ReaderGetter func(ctx context.Context) (Reader, error)
+
+// ReadCloserGetter is a functional type to get [ReadCloser]
+type ReadCloserGetter func(ctx context.Context) (ReadCloser, error)
 
 // NewReader returns a [Reader] with digest and size veirfication on Read().
 func NewReader(r io.Reader, desc imgspecv1.Descriptor) Reader {

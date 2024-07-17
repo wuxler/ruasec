@@ -10,9 +10,9 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
-	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	"github.com/wuxler/ruasec/pkg/ocispec/name"
+	ocispecremote "github.com/wuxler/ruasec/pkg/ocispec/remote"
 )
 
 // NewRemoteRegistryOptions returns a *RemoteRegistryOptions with default values.
@@ -65,7 +65,7 @@ func (o *RemoteRegistryOptions) Flags() []cli.Flag {
 }
 
 // NewDistributionClient returns a client with options configured.
-func (o *RemoteRegistryOptions) NewDistributionClient() (*distribution.Client, error) {
+func (o *RemoteRegistryOptions) NewDistributionClient() (*ocispecremote.Client, error) {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	// load tls config
 	tlsConfig := &tls.Config{
@@ -82,11 +82,11 @@ func (o *RemoteRegistryOptions) NewDistributionClient() (*distribution.Client, e
 	}
 	tr.TLSClientConfig = tlsConfig
 
-	client := distribution.NewClient()
+	client := ocispecremote.NewClient()
 	client.Client = &http.Client{Transport: tr}
 
 	if o.AuthFile != "" {
-		authProvider, err := distribution.NewAuthProviderFromAuthFilePath(o.AuthFile)
+		authProvider, err := ocispecremote.NewAuthProviderFromAuthFilePath(o.AuthFile)
 		if err != nil {
 			return nil, err
 		}
@@ -95,11 +95,30 @@ func (o *RemoteRegistryOptions) NewDistributionClient() (*distribution.Client, e
 	return client, nil
 }
 
+// NewRegistry returns the remote registry client for the target named.
+func (o *RemoteRegistryOptions) NewRegistry(ctx context.Context, target name.Registry) (*remote.Registry, error) {
+	opts, err := o.MakeRemoteOptions()
+	if err != nil {
+		return nil, err
+	}
+	return remote.NewRegistry(ctx, target, opts...)
+}
+
 // NewRepository returns the remote repository client for the target named.
-func (o *RemoteRegistryOptions) NewRepository(ctx context.Context, target name.Repository) (distribution.Repository, error) {
+func (o *RemoteRegistryOptions) NewRepository(ctx context.Context, target name.Repository) (*remote.Repository, error) {
+	opts, err := o.MakeRemoteOptions()
+	if err != nil {
+		return nil, err
+	}
+	return remote.NewRepository(ctx, target, opts...)
+}
+
+// MakeRemoteOptions returns the options for the remote client.
+func (o *RemoteRegistryOptions) MakeRemoteOptions() ([]remote.Option, error) {
 	client, err := o.NewDistributionClient()
 	if err != nil {
 		return nil, err
 	}
-	return remote.NewRepositoryWithContext(ctx, target.String(), remote.WithHTTPClient(client))
+	opts := []remote.Option{remote.WithHTTPClient(client)}
+	return opts, nil
 }

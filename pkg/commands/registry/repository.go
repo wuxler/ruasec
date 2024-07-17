@@ -8,8 +8,7 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
-	"github.com/wuxler/ruasec/pkg/ocispec/distribution"
-	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
+	"github.com/wuxler/ruasec/pkg/ocispec/iter"
 	"github.com/wuxler/ruasec/pkg/ocispec/name"
 )
 
@@ -24,79 +23,12 @@ type RepositoryCommand struct{}
 // ToCLI transforms to a *cli.Command.
 func (c *RepositoryCommand) ToCLI() *cli.Command {
 	return &cli.Command{
-		Name:            "repo",
-		Usage:           "Repository operations",
-		HideHelpCommand: true,
+		Name:  "repo",
+		Usage: "Repository operations",
 		Commands: []*cli.Command{
-			NewRepositoryListCommand().ToCLI(),
 			NewRepositoryTagsCommand().ToCLI(),
 		},
 	}
-}
-
-// NewRepositoryListCommand returns a command with default values.
-func NewRepositoryListCommand() *RepositoryListCommand {
-	return &RepositoryListCommand{
-		RemoteRegistryOptions: options.NewRemoteRegistryOptions(),
-	}
-}
-
-// RepositoryListCommand is used to list repositories in the remote registry.
-type RepositoryListCommand struct {
-	*options.RemoteRegistryOptions
-}
-
-// ToCLI transforms to a *cli.Command.
-func (c *RepositoryListCommand) ToCLI() *cli.Command {
-	return &cli.Command{
-		Name:    "ls",
-		Aliases: []string{"list", "catalog"},
-		Usage:   "List repositories in the remote registry",
-		UsageText: `rua registry repo ls [OPTIONS] REGISTRY
-
-# List repositories in the remote registry
-$ rua registry repo ls example.registry.com
-`,
-		ArgsUsage: "REGISTRY",
-		Flags:     c.Flags(),
-		Before:    cli.BeforeFunc(cmdhelper.ExactArgs(1)),
-		Action:    c.Run,
-	}
-}
-
-// Flags defines the flags related to the current command.
-func (c *RepositoryListCommand) Flags() []cli.Flag {
-	return c.RemoteRegistryOptions.Flags()
-}
-
-// Run is the main function for the current command
-func (c *RepositoryListCommand) Run(ctx context.Context, cmd *cli.Command) error {
-	target, err := name.NewRegistry(cmd.Args().First())
-	if err != nil {
-		return err
-	}
-	client, err := c.NewDistributionClient()
-	if err != nil {
-		return err
-	}
-	registry, err := remote.NewRegistryWithContext(ctx, target.String(), remote.WithHTTPClient(client))
-	if err != nil {
-		return err
-	}
-	iterator := registry.ListRepositories()
-	for {
-		repos, err := iterator.Next(ctx)
-		if err != nil {
-			if errors.Is(err, distribution.ErrIteratorDone) {
-				break
-			}
-			return err
-		}
-		for _, repo := range repos {
-			cmdhelper.Fprintf(cmd.Writer, repo.Named().Path())
-		}
-	}
-	return nil
 }
 
 // NewRepositoryTagsCommand returns a command with default values.
@@ -147,7 +79,7 @@ func (c *RepositoryTagsCommand) Run(ctx context.Context, cmd *cli.Command) error
 	for {
 		tags, err := iterator.Next(ctx)
 		if err != nil {
-			if errors.Is(err, distribution.ErrIteratorDone) {
+			if errors.Is(err, iter.ErrIteratorDone) {
 				break
 			}
 			return err

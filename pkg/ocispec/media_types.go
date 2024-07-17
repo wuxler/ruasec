@@ -204,3 +204,23 @@ func DetectMediaType(content []byte) string {
 	}
 	return ""
 }
+
+// IsDockerSchema1Manifest returns true if the mediaType is docker schema1 manifest.
+func IsDockerSchema1Manifest(mt string) bool {
+	return mt == MediaTypeDockerV2S1Manifest || mt == MediaTypeDockerV2S1SignedManifest
+}
+
+// IsCompressedLayer returns true if the mediaType is a compressed blob type.
+func IsCompressedBlob(mt string) bool {
+	switch mt {
+	case MediaTypeDockerV2S1ManifestLayer,
+		MediaTypeDockerV2S2ImageLayerGzip,
+		MediaTypeDockerV2S2ForeignImageLayerGzip,
+		MediaTypeImageLayerGzip,
+		MediaTypeImageLayerZstd,
+		MediaTypeImageLayerNonDistributableGzip,
+		MediaTypeImageLayerNonDistributableZstd:
+		return true
+	}
+	return false
+}

@@ -16,6 +16,7 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/authfile"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/credentials"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
+	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
 )
 
 // NewLoginCommand returns a LoginCommand with default values.
@@ -122,6 +123,10 @@ func (c *LoginCommand) Run(ctx context.Context, cmd *cli.Command) error {
 
 func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 	serverAddress, _ := cmdhelper.ElectDockerServerAddress(ctx, cmd, cmd.Args().First())
+	serverAddressName, err := ocispecname.NewRegistry(serverAddress)
+	if err != nil {
+		return err
+	}
 
 	authFile := authfile.NewAuthFile(c.AuthFile)
 	if err := authFile.Load(); err != nil {
@@ -141,7 +146,7 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 			}
 			return authConfig
 		}
-		registry, err := remote.NewRegistryWithContext(ctx, serverAddress, remote.WithHTTPClient(client))
+		registry, err := remote.NewRegistry(ctx, serverAddressName, remote.WithHTTPClient(client))
 		if err != nil {
 			return err
 		}
@@ -163,7 +168,7 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 	client.AuthProvider = func(_ context.Context, _ string) authn.AuthConfig {
 		return authConfig
 	}
-	registry, err := remote.NewRegistryWithContext(ctx, serverAddress, remote.WithHTTPClient(client))
+	registry, err := remote.NewRegistry(ctx, serverAddressName, remote.WithHTTPClient(client))
 	if err != nil {
 		return err
 	}

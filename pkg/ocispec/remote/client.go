@@ -1,4 +1,4 @@
-package distribution
+package remote
 
 import (
 	"context"
@@ -8,19 +8,17 @@ import (
 	"io"
 	"net/http"
 	stdurl "net/url"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/wuxler/ruasec/pkg/appinfo"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
-	"github.com/wuxler/ruasec/pkg/ocispec/authn/authfile"
 	"github.com/wuxler/ruasec/pkg/util/xcache"
+	"github.com/wuxler/ruasec/pkg/util/xhttp"
 	"github.com/wuxler/ruasec/pkg/util/xio"
-	"github.com/wuxler/ruasec/pkg/xlog"
 )
 
-var _ HTTPClient = (*Client)(nil)
+var _ xhttp.Client = (*Client)(nil)
 
 var (
 	// defaultClientID specifies the default client ID used in token fetching.
@@ -41,74 +39,18 @@ var (
 	defaultTokenCache     = xcache.NewDiscard[authn.Token]()
 )
 
-// NewClient returns the default client with the memory-based cache.
-func NewClient() *Client {
-	return &Client{
-		ChallengeCache: xcache.NewMemory[authn.Challenge](),
-		TokenCache:     xcache.NewMemory[authn.Token](),
-	}
-}
-
-// HTTPClient is the http client interface.
-type HTTPClient interface {
-	Do(*http.Request) (*http.Response, error)
-}
-
-// AuthProvider provides the AuthConfig related to the registry.
-type AuthProvider func(ctx context.Context, host string) authn.AuthConfig
-
-// NewAuthProviderFromAuthFile returns an AuthProvider with the *authfile.AuthFile provided.
-func NewAuthProviderFromAuthFile(authFile *authfile.AuthFile) AuthProvider {
-	return func(ctx context.Context, host string) authn.AuthConfig {
-		authConfig, err := authFile.Get(ctx, host)
-		if err != nil {
-			xlog.C(ctx).Warnf("failed to get auth config for host %s: %v", host, err)
-		}
-		return authConfig
-	}
-}
-
-// NewAuthProviderFromAuthFilePath returns an AuthProvider with the auth file path provided.
-// It will ignore the file load error when the path is not existed.
-func NewAuthProviderFromAuthFilePath(path string) (AuthProvider, error) {
-	authFile := authfile.NewAuthFile(path)
-	if err := authFile.Load(); err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("failed to load auth file: %w", err)
-		}
-	}
-	return NewAuthProviderFromAuthFile(authFile), nil
-}
-
 // ChallengeCache is the cache for the Challenge related to the registry.
 type ChallengeCache = xcache.Cache[authn.Challenge]
 
 // TokenCache is the cache for the Token related to the registry and scopes.
 type TokenCache = xcache.Cache[authn.Token]
 
-// TokenOptions is the options for fetching token from remote.
-type TokenOptions struct {
-	// ClientID used in fetching OAuth2 token as a required field.
-	// If empty, a default client ID is used.
-	// Reference:
-	// - https://docs.docker.com/registry/spec/auth/oauth/#getting-a-token
-	ClientID string
-
-	// ForceAttemptOAuth2 controls whether to follow OAuth2 with password grant
-	// instead the distribution spec when authenticating using username and
-	// password.
-	// References:
-	// - https://docs.docker.com/registry/spec/auth/jwt/
-	// - https://docs.docker.com/registry/spec/auth/oauth/
-	ForceAttemptOAuth2 bool
-
-	// OfflineToken controls whether to return a refresh token along with the bearer token.
-	// A refresh token is capable of getting additional bearer tokens for the same subject
-	// with different scopes. The refresh token does not have an expiration and should be
-	// considered completely opaque to the client.
-	// References:
-	// - https://docs.docker.com/registry/spec/auth/token/
-	OfflineToken bool
+// NewClient returns the default client with the memory-based cache.
+func NewClient() *Client {
+	return &Client{
+		ChallengeCache: xcache.NewMemory[authn.Challenge](),
+		TokenCache:     xcache.NewMemory[authn.Token](),
+	}
 }
 
 // Client implements [HTTPClient] interface for common distribution authentication spec.
@@ -139,14 +81,22 @@ type Client struct {
 // Do performs an HTTP request and returns an HTTP response with additinal processes like
 // authenticating the request.
 func (c *Client) Do(request *http.Request) (*http.Response, error) {
+	resp, err := c.send(request)
+	if err != nil {
+		return nil, xhttp.MakeRequestError(request, err)
+	}
+	return resp, nil
+}
+
+func (c *Client) send(request *http.Request) (*http.Response, error) {
 	ctx := request.Context()
 	request.Header = c.expandHeader(request.Header)
 
-	if IsDirectRequest(ctx) {
+	if xhttp.IsDirectRequest(ctx) {
 		return c.client().Do(request)
 	}
 
-	if err := CheckRequestBodyRewindable(request); err != nil {
+	if err := xhttp.CheckRequestBodyRewindable(request); err != nil {
 		return nil, err
 	}
 
@@ -381,7 +331,7 @@ func (c *Client) fetchTokenWithOAuth2(ctx context.Context, auth authn.AuthConfig
 	}
 	defer xio.CloseAndSkipError(resp.Body)
 
-	if err := HTTPSuccess(resp, http.StatusNotFound); err != nil {
+	if err := xhttp.Success(resp, http.StatusNotFound); err != nil {
 		return nil, err
 	}
 	if resp.StatusCode == http.StatusNotFound {
@@ -398,7 +348,7 @@ func (c *Client) fetchTokenWithOAuth2(ctx context.Context, auth authn.AuthConfig
 	token := &authn.Token{}
 	r := io.LimitReader(resp.Body, maxAuthResponseBytes)
 	if err := json.NewDecoder(r).Decode(token); err != nil {
-		return nil, MakeError(resp, err)
+		return nil, xhttp.MakeResponseError(resp, err)
 	}
 	if token.IssuedAt.IsZero() {
 		token.IssuedAt = time.Now().UTC()
@@ -433,14 +383,14 @@ func (c *Client) fetchTokenWithBasic(ctx context.Context, auth authn.AuthConfig,
 		return nil, err
 	}
 	defer xio.CloseAndSkipError(resp.Body)
-	if err := HTTPSuccess(resp); err != nil {
+	if err := xhttp.Success(resp); err != nil {
 		return nil, err
 	}
 
 	token := &authn.Token{}
 	r := io.LimitReader(resp.Body, maxAuthResponseBytes)
 	if err := json.NewDecoder(r).Decode(token); err != nil {
-		return nil, MakeError(resp, err)
+		return nil, xhttp.MakeResponseError(resp, err)
 	}
 	if token.IssuedAt.IsZero() {
 		token.IssuedAt = time.Now().UTC()

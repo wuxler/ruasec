@@ -121,7 +121,7 @@ func (c *ManifestFetchCommand) Run(ctx context.Context, cmd *cli.Command) error 
 		if content, err = cmdhelper.PrettifyJSON(content); err != nil {
 			return err
 		}
-		cmdhelper.Fprintf(cmd.Writer, "%s\n", string(content))
+		cmdhelper.Fprintf(cmd.Writer, "%s", string(content))
 		return nil
 	}
 
@@ -179,7 +179,7 @@ func (c *ManifestStatCommand) Run(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	desc, err := repository.Manifests().StatTagOrDigest(ctx, tagOrDigest)
+	desc, err := repository.Manifests().Stat(ctx, tagOrDigest)
 	if err != nil {
 		return err
 	}
@@ -250,7 +250,7 @@ func (c *ManifestDeleteCommand) Run(ctx context.Context, cmd *cli.Command) error
 	if err != nil {
 		return err
 	}
-	desc, err := repository.Manifests().StatTagOrDigest(ctx, tagOrDigest)
+	desc, err := repository.Manifests().Stat(ctx, tagOrDigest)
 	if err != nil {
 		if errors.Is(err, errdefs.ErrNotFound) {
 			if c.Force {

@@ -1,15 +1,11 @@
-package distribution
+package xhttp
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
-	stdurl "net/url"
-	"strings"
 	"time"
 
-	"github.com/wuxler/ruasec/pkg/util/xio"
 	"github.com/wuxler/ruasec/pkg/xlog"
 )
 
@@ -18,37 +14,13 @@ const (
 	fallbackDelay = 300 * time.Millisecond
 )
 
-// DetectScheme sniffs the protocol of the target registry server is "http" or "https".
-func DetectScheme(ctx context.Context, client HTTPClient, addr string) (string, error) {
-	ctx = WithDirectRequest(ctx)
-
-	host, scheme, err := parseHostScheme(addr)
-	if err != nil {
-		return "", err
-	}
-	if scheme != "" {
-		return scheme, nil
-	}
-	schemes := []string{"https", "http"}
-	primary := &schemePinger{client: client, host: host, scheme: schemes[0]}
-	fallback := &schemePinger{client: client, host: host, scheme: schemes[1]}
-	isPrimary, err := pingParallel(ctx, primary, fallback)
-	if err != nil {
-		return "", err
-	}
-	detected := schemes[0]
-	if !isPrimary {
-		detected = schemes[1]
-	}
-	return detected, nil
-}
-
-type pinger interface {
+// Pinger used to detect "http" or "https" scheme.
+type Pinger interface {
 	fmt.Stringer
 	Ping(ctx context.Context) (bool, error)
 }
 
-// pingParallel do ping request in parallel.
+// PingParallel does ping request in parallel and returns whether the primary [Pinger] hit.
 //
 // See:
 //   - https://github.com/google/go-containerregistry/pull/1521
@@ -57,7 +29,7 @@ type pinger interface {
 // [net/dial.go]: https://cs.opensource.google/go/go/+/master:src/net/dial.go;l=447;drc=38cfb3be9d486833456276777155980d1ec0823e
 //
 //nolint:gocognit // known complexity
-func pingParallel(ctx context.Context, primary, fallback pinger) (bool, error) {
+func PingParallel(ctx context.Context, primary, fallback Pinger) (bool, error) {
 	if fallback == nil {
 		result, err := primary.Ping(ctx)
 		return result, err
@@ -125,49 +97,4 @@ func pingParallel(ctx context.Context, primary, fallback pinger) (bool, error) {
 			}
 		}
 	}
-}
-
-// parseHostScheme parse any address string and return host, scheme and error.
-// If addr is a host/domain style string, the returned scheme will be "".
-func parseHostScheme(addr string) (string, string, error) {
-	if strings.Contains(addr, "://") {
-		url, err := stdurl.Parse(addr)
-		if err != nil {
-			return "", "", err
-		}
-		return url.Host, url.Scheme, nil
-	}
-
-	url, err := stdurl.Parse("https://" + addr)
-	if err != nil {
-		return "", "", err
-	}
-	return url.Host, "", nil
-}
-
-type schemePinger struct {
-	client HTTPClient
-	host   string
-	scheme string
-}
-
-func (p *schemePinger) String() string {
-	return fmt.Sprintf("GET %s://%s/v2/", p.scheme, p.host)
-}
-
-func (p *schemePinger) Ping(ctx context.Context) (bool, error) {
-	url := fmt.Sprintf("%s://%s/v2/", p.scheme, p.host)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
-	if err != nil {
-		return false, err
-	}
-	resp, err := p.client.Do(req) //nolint:bodyclose // closed by xio.CloseAndSkipError
-	if err != nil {
-		return false, fmt.Errorf("failed to do request to %s %s: %w", req.Method, req.URL, err)
-	}
-	defer xio.CloseAndSkipError(resp.Body)
-	if err := HTTPSuccess(resp, http.StatusUnauthorized); err != nil {
-		return false, err
-	}
-	return true, nil
 }

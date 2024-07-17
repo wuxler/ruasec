@@ -1,6 +1,8 @@
 package ocispec
 
-import imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
+import (
+	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
+)
 
 //go:generate mockgen -destination=./mocks/mock_manifest.go -package=mocks github.com/wuxler/ruasec/pkg/ocispec Manifest,IndexManifest
 

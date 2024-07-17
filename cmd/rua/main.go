@@ -9,6 +9,7 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands"
+	"github.com/wuxler/ruasec/pkg/commands/image"
 	"github.com/wuxler/ruasec/pkg/commands/registry"
 )
 
@@ -26,6 +27,7 @@ func main() {
 		Commands: []*cli.Command{
 			commands.NewVersionCommand().ToCLI(),
 			registry.New().ToCLI(),
+			image.New().ToCLI(),
 		},
 		ExitErrHandler: func(ctx context.Context, c *cli.Command, err error) {
 			cli.HandleExitCoder(err)
