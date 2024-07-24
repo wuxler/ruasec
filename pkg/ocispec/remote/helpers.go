@@ -86,7 +86,7 @@ func DescriptorFromResponse(resp *http.Response, knownDigest digest.Digest) (img
 		}
 		serverSideDigest = dgst
 	}
-	if len(knownDigest) > 0 && serverSideDigest != knownDigest {
+	if len(knownDigest) > 0 && len(serverSideDigest) > 0 && serverSideDigest != knownDigest {
 		return zero, xhttp.MakeResponseError(resp, fmt.Errorf("digest mismatch: known=%q, server=%q", knownDigest, serverSideDigest))
 	}
 

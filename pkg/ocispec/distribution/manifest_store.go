@@ -8,6 +8,7 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/errdefs"
 	"github.com/wuxler/ruasec/pkg/ocispec/cas"
+	"github.com/wuxler/ruasec/pkg/util/xio"
 )
 
 // ManifestStore is a storage interface for manifests resource.
@@ -55,9 +56,14 @@ func (s *manifestStore) Fetch(ctx context.Context, target imgspecv1.Descriptor) 
 	return s.FetchTagOrDigest(ctx, target.Digest.String())
 }
 
-// Push pushes the content [Reader].
-func (s *manifestStore) Push(ctx context.Context, content cas.Reader) error {
-	return s.spec.PushManifest(ctx, s.repo, content)
+// Push pushes the content got by the given getter.
+func (s *manifestStore) Push(ctx context.Context, getter cas.ReadCloserGetter) error {
+	rc, err := getter(ctx)
+	if err != nil {
+		return err
+	}
+	defer xio.CloseAndSkipError(rc)
+	return s.spec.PushManifest(ctx, s.repo, rc)
 }
 
 // Delete removes the content identified by the descriptor.

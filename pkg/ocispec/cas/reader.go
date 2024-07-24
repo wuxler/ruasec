@@ -24,9 +24,6 @@ type ReadCloser interface {
 	io.Closer
 }
 
-// ReaderGetter is a functional type to get [Reader]
-type ReaderGetter func(ctx context.Context) (Reader, error)
-
 // ReadCloserGetter is a functional type to get [ReadCloser]
 type ReadCloserGetter func(ctx context.Context) (ReadCloser, error)
 

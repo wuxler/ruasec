@@ -14,6 +14,8 @@ import (
 // BlobStore is a storage interface for blobs resource.
 type BlobStore interface {
 	cas.Storage
+	// FetchDigest fetches the content for the given digest.
+	FetchDigest(ctx context.Context, dgst digest.Digest) (cas.ReadCloser, error)
 }
 
 // NewBlobStore returns a [BlobStore] with the given distribution Spec
@@ -54,9 +56,14 @@ func (s *blobStore) Fetch(ctx context.Context, target imgspecv1.Descriptor) (cas
 	return s.spec.GetBlob(ctx, s.repo, target.Digest)
 }
 
-// Push pushes the content [Reader].
-func (s *blobStore) Push(ctx context.Context, content cas.Reader) error {
-	panic("not implemented") // TODO: Implement
+// FetchDigest fetches the content for the given digest.
+func (s *blobStore) FetchDigest(ctx context.Context, dgst digest.Digest) (cas.ReadCloser, error) {
+	return s.spec.GetBlob(ctx, s.repo, dgst)
+}
+
+// Push pushes the content got by the given getter.
+func (s *blobStore) Push(ctx context.Context, getter cas.ReadCloserGetter) error {
+	return s.spec.PushBlob(ctx, s.repo, getter)
 }
 
 // Delete removes the content identified by the descriptor.

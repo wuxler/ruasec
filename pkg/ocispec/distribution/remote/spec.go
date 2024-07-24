@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	stdurl "net/url"
+	"strings"
 
 	"github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
@@ -54,6 +55,7 @@ type Spec struct {
 }
 
 func (spec *Spec) endpoint(path string) string {
+	path = strings.TrimPrefix(path, "/")
 	return fmt.Sprintf("%s://%s/%s", spec.name.Scheme(), spec.name.Hostname(), path)
 }
 

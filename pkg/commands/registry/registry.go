@@ -25,6 +25,7 @@ func (c *RegistryCommand) ToCLI() *cli.Command {
 			NewManifestCommand().ToCLI(),
 			NewRepositoryCommand().ToCLI(),
 			NewCatalogCommand().ToCLI(),
+			NewBlobCommand().ToCLI(),
 		},
 	}
 }

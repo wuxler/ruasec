@@ -15,8 +15,8 @@ type Storage interface {
 	Exists(ctx context.Context, target imgspecv1.Descriptor) (bool, error)
 	// Fetch fetches the content identified by the descriptor.
 	Fetch(ctx context.Context, target imgspecv1.Descriptor) (ReadCloser, error)
-	// Push pushes the content [Reader].
-	Push(ctx context.Context, content Reader) error
+	// Push pushes the content got by the given getter.
+	Push(ctx context.Context, getter ReadCloserGetter) error
 	// Delete removes the content identified by the descriptor.
 	Delete(ctx context.Context, target imgspecv1.Descriptor) error
 }

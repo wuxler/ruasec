@@ -32,17 +32,25 @@ type ManifestCommand struct {
 
 // ToCLI transforms to a *cli.Command.
 func (c *ManifestCommand) ToCLI() *cli.Command {
-	return &cli.Command{
-		Name:            "manifest",
-		Usage:           "Manifest operations",
-		HideHelpCommand: true,
-		Commands: []*cli.Command{
-			NewManifestFetchCommand().ToCLI(),
-			NewManifestStatCommand().ToCLI(),
-			NewManifestDeleteCommand().ToCLI(),
-			NewManifestPushCommand().ToCLI(),
-		},
-	}
+	cmd := NewManifestFetchCommand().ToCLI()
+	cmd.Name = "manifest"
+	cmd.Usage = "Manifest operations, default to fetch subcommand"
+	cmd.UsageText = `rua registry manifest [OPTIONS] IMAGE
+
+# Fetch raw manifest from the remote registry
+$ rua registry manifest hello-world:latest
+
+# Fetch manifest from the remote registry and prettify the output
+$ rua registry manifest --pretty hello-world:latest
+`
+	cmd.HideHelpCommand = true
+	cmd.Commands = append(cmd.Commands,
+		NewManifestFetchCommand().ToCLI(),
+		NewManifestStatCommand().ToCLI(),
+		NewManifestDeleteCommand().ToCLI(),
+		NewManifestPushCommand().ToCLI(),
+	)
+	return cmd
 }
 
 // NewManifestFetchCommand returns a manifest fetch command with default values.
@@ -129,7 +137,7 @@ func (c *ManifestFetchCommand) Run(ctx context.Context, cmd *cli.Command) error 
 	return err
 }
 
-// NewManifestFetchCommand returns a manifest stat command with default values.
+// NewManifestStatCommand returns a manifest stat command with default values.
 func NewManifestStatCommand() *ManifestStatCommand {
 	return &ManifestStatCommand{
 		RemoteRegistryOptions: options.NewRemoteRegistryOptions(),
