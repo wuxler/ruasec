@@ -13,12 +13,13 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	"github.com/wuxler/ruasec/pkg/ocispec/name"
 	ocispecremote "github.com/wuxler/ruasec/pkg/ocispec/remote"
+	"github.com/wuxler/ruasec/pkg/util/xdocker"
 )
 
 // NewRemoteRegistryOptions returns a *RemoteRegistryOptions with default values.
 func NewRemoteRegistryOptions() *RemoteRegistryOptions {
 	return &RemoteRegistryOptions{
-		AuthFile: cmdhelper.DefaultDockerAuthFile(),
+		AuthFile: xdocker.ConfigFile(),
 	}
 }
 

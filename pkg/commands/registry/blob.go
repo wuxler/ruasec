@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/manifoldco/promptui"
@@ -22,6 +21,7 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 	_ "github.com/wuxler/ruasec/pkg/util/xio/compression/builtin"
+	"github.com/wuxler/ruasec/pkg/util/xos"
 )
 
 // NewBlobCommand returns a BlobCommand with default values.
@@ -191,11 +191,7 @@ func (c *BlobFetchCommand) Run(ctx context.Context, cmd *cli.Command) error {
 		writer = cmd.Writer
 	} else {
 		// save blob content into the local file if the output path is specified
-		dir := filepath.Dir(output)
-		if err := os.MkdirAll(dir, 0o700); err != nil {
-			return err
-		}
-		file, err := os.Create(output)
+		file, err := xos.Create(output)
 		if err != nil {
 			return err
 		}
