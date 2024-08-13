@@ -8,14 +8,15 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	_ "github.com/wuxler/ruasec/pkg/ocispec/manifest/all"
+	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
 )
 
 const (
 	driverName = "remote"
 )
 
-// NewProvider returns a remote type provider.
-func NewProvider(client *remote.Registry) image.Provider {
+// NewDriver returns a remote type provider.
+func NewDriver(client *remote.Registry) image.Driver {
 	return &Driver{client: client}
 }
 
@@ -29,7 +30,7 @@ func (p *Driver) Name() string {
 	return driverName
 }
 
-// Image creates a new image specified by the string ref.
-func (p *Driver) Image(ctx context.Context, ref string, opts ...image.QueryOption) (ocispec.ImageCloser, error) {
-	return NewImageByRef(ctx, p.client, ref, opts...)
+// Image returns the image specified by the ref.
+func (p *Driver) GetImage(ctx context.Context, ref ocispecname.Reference, opts ...image.ImageOption) (ocispec.ImageCloser, error) {
+	return NewImage(ctx, p.client, ref, opts...)
 }

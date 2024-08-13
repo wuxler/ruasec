@@ -22,29 +22,9 @@ import (
 
 var _ ocispec.ImageCloser = (*remoteImage)(nil)
 
-// NewImageByRef creates a new image specified by the string ref and context.
-func NewImageByRef(ctx context.Context, client *remote.Registry, ref string, opts ...image.QueryOption) (ocispec.ImageCloser, error) {
-	name, err := ocispecname.NewReference(ref)
-	if err != nil {
-		return nil, err
-	}
-	img, err := NewImage(ctx, client, name, opts...)
-	if err != nil {
-		return nil, err
-	}
-	raw, ok := img.(*remoteImage)
-	if !ok {
-		return nil, fmt.Errorf("unexpected image type %T", img)
-	}
-	raw.metadata.Name = ref
-	return raw, nil
-}
-
-// NewImage creates a new image speicified by the parsed name and context.
-//
-//nolint:nolintlint,gocognit // ignore explicitly
-func NewImage(ctx context.Context, client *remote.Registry, ref ocispecname.Reference, opts ...image.QueryOption) (ocispec.ImageCloser, error) {
-	options := image.MakeQueryOptions(opts...)
+// NewImage returns the image speicified by the parsed name.
+func NewImage(ctx context.Context, client *remote.Registry, ref ocispecname.Reference, opts ...image.ImageOption) (ocispec.ImageCloser, error) {
+	options := image.MakeImageOptions(opts...)
 
 	// check if the reference is in the registry
 	expectHostname := client.Name().Hostname()
@@ -68,38 +48,19 @@ func NewImage(ctx context.Context, client *remote.Registry, ref ocispecname.Refe
 	}
 	defer xio.CloseAndSkipError(rc)
 
-	m, desc, err := manifest.ParseCASReader(rc)
+	mf, desc, err := manifest.ParseCASReader(rc)
 	if err != nil {
 		return nil, err
 	}
 
-	isIndexManifest := false
-	switch mn := m.(type) {
-	case ocispec.IndexManifest:
-		// select and fetch the speicified instance image manifest by the query options
-		matchers := []manifest.DescriptorMatcher{}
-		if options.InstanceDigest != "" {
-			matchers = append(matchers, manifest.DescriptorMatcherByDigest(options.InstanceDigest))
-		}
-		matchers = append(matchers, manifest.DescriptorMatcherByPlatform(options.Platform))
-		selectedManifest, selectedDesc, err := manifest.SelectManifest(
-			ctx, repo.Manifests(), mn, matchers...)
-		if err != nil {
-			return nil, err
-		}
-		imageManifest, ok := selectedManifest.(manifest.ImageManifest)
-		if !ok {
-			return nil, fmt.Errorf("unexpected manifest type %T", selectedManifest)
-		}
-		img.manifest = imageManifest
-		img.descriptor = selectedDesc
-		isIndexManifest = true
-	case manifest.ImageManifest:
-		img.manifest = mn
-		img.descriptor = desc
-	default:
-		return nil, errdefs.Newf(errdefs.ErrUnsupported, "unsupported manifest type %T", m)
+	// select the manifest and descriptor of the target image
+	selectedManifest, selectedDesc, err := manifest.SelectImageManifest(
+		ctx, repo.Manifests(), mf, desc, options.DescriptorMatchers()...)
+	if err != nil {
+		return nil, err
 	}
+	img.manifest = selectedManifest
+	img.descriptor = selectedDesc
 
 	// TODO: convert docker schema1 manifest to *ocispecv1.Image config
 	if mt := img.manifest.MediaType(); ocispec.IsDockerSchema1Manifest(mt) {
@@ -114,7 +75,7 @@ func NewImage(ctx context.Context, client *remote.Registry, ref ocispecname.Refe
 		Platform: img.descriptor.Platform,
 	}
 
-	if isIndexManifest {
+	if _, isIndexManifest := mf.(ocispec.IndexManifest); isIndexManifest {
 		metadata.IndexDigest = desc.Digest
 	}
 

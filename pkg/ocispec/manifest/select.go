@@ -3,6 +3,7 @@ package manifest
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/containerd/platforms"
 	"github.com/opencontainers/go-digest"
@@ -13,7 +14,6 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec"
 	"github.com/wuxler/ruasec/pkg/ocispec/cas"
 	"github.com/wuxler/ruasec/pkg/util/xio"
-	"github.com/wuxler/ruasec/pkg/xlog"
 )
 
 // ManifestFetcher is an interface for fetching manifests from a storage.
@@ -23,7 +23,31 @@ type ManifestFetcher interface {
 }
 
 // DescriptorMatcher is a function that selects a descriptor from a list of descriptors.
-type DescriptorMatcher func(descs ...imgspecv1.Descriptor) (imgspecv1.Descriptor, error)
+type DescriptorMatcher func(descs ...imgspecv1.Descriptor) (imgspecv1.Descriptor, bool)
+
+// SelectImageManifest selects the single image manifest from the given src manifest.
+// If the src is an image manifest, it is returned as is.
+// If the src is an index manifest, the image manifest matching the given matchers is returned.
+func SelectImageManifest(ctx context.Context, fetcher ManifestFetcher, src ocispec.Manifest, srcDesc imgspecv1.Descriptor, matchers ...DescriptorMatcher) (ImageManifest, imgspecv1.Descriptor, error) {
+	var zero imgspecv1.Descriptor
+
+	switch mf := src.(type) {
+	case ImageManifest:
+		return mf, srcDesc, nil
+	case ocispec.IndexManifest:
+		selectedManifest, selectedDesc, err := SelectManifest(ctx, fetcher, mf, matchers...)
+		if err != nil {
+			return nil, zero, err
+		}
+		imf, ok := selectedManifest.(ImageManifest)
+		if !ok {
+			return nil, zero, fmt.Errorf("unexpected manifest type %T", selectedManifest)
+		}
+		return imf, selectedDesc, nil
+	default:
+		return nil, zero, errdefs.Newf(errdefs.ErrUnsupported, "unsupported manifest type %T", src)
+	}
+}
 
 // SelectManifest selects the target manifest from the given index manifest.
 func SelectManifest(ctx context.Context, fetcher ManifestFetcher, index ocispec.IndexManifest, matchers ...DescriptorMatcher) (ocispec.Manifest, imgspecv1.Descriptor, error) {
@@ -34,19 +58,15 @@ func SelectManifest(ctx context.Context, fetcher ManifestFetcher, index ocispec.
 	}
 
 	var desc imgspecv1.Descriptor
-	selected := false
-	for i, matcher := range matchers {
-		matched, err := matcher(descriptors...)
-		if err == nil {
-			desc = matched
-			selected = true
+	found := false
+	for _, matcher := range matchers {
+		desc, found = matcher(descriptors...)
+		if found {
 			break
 		}
-		xlog.C(ctx).Debugf("failed to select manifest with matcher %d: %s", i, err)
 	}
-	if !selected {
-		xlog.C(ctx).Warnf("no manifest selected with matchers, use the first as default")
-		desc = descriptors[0]
+	if !found {
+		return nil, zero, errdefs.Newf(errdefs.ErrNotFound, "no manifest selected with descriptor matchers")
 	}
 
 	rc, err := fetcher.Fetch(ctx, desc)
@@ -64,15 +84,13 @@ func SelectManifest(ctx context.Context, fetcher ManifestFetcher, index ocispec.
 
 // DescriptorMatcherByDigest returns a DescriptorMatcher that selects a descriptor by the dgst applied.
 func DescriptorMatcherByDigest(dgst digest.Digest) DescriptorMatcher {
-	return func(descs ...imgspecv1.Descriptor) (imgspecv1.Descriptor, error) {
-		var zero imgspecv1.Descriptor
-		found, ok := lo.Find(descs, func(desc imgspecv1.Descriptor) bool {
+	return func(descs ...imgspecv1.Descriptor) (imgspecv1.Descriptor, bool) {
+		return lo.Find(descs, func(desc imgspecv1.Descriptor) bool {
+			if dgst == "" {
+				return false
+			}
 			return desc.Digest == dgst
 		})
-		if ok {
-			return found, nil
-		}
-		return zero, errdefs.Newf(errdefs.ErrNotFound, "no descriptor matched with digest %q", dgst)
 	}
 }
 
@@ -83,17 +101,12 @@ func DescriptorMatcherByPlatform(target *imgspecv1.Platform) DescriptorMatcher {
 		p = *target
 	}
 	matcher := platforms.OnlyStrict(p)
-	return func(descs ...imgspecv1.Descriptor) (imgspecv1.Descriptor, error) {
-		var zero imgspecv1.Descriptor
-		found, ok := lo.Find(descs, func(desc imgspecv1.Descriptor) bool {
+	return func(descs ...imgspecv1.Descriptor) (imgspecv1.Descriptor, bool) {
+		return lo.Find(descs, func(desc imgspecv1.Descriptor) bool {
 			if desc.Platform == nil {
 				return false
 			}
 			return matcher.Match(*desc.Platform)
 		})
-		if ok {
-			return found, nil
-		}
-		return zero, errdefs.Newf(errdefs.ErrNotFound, "no descriptor matched with platform %s", platforms.Format(p))
 	}
 }

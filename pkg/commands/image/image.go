@@ -9,6 +9,7 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
+	"github.com/wuxler/ruasec/pkg/image"
 	"github.com/wuxler/ruasec/pkg/image/remote"
 	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/xio"
@@ -93,7 +94,8 @@ func (c *ConfigFetchCommand) Run(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	img, err := remote.NewImageByRef(ctx, client, name)
+	driver := remote.NewDriver(client)
+	img, err := image.NewImageFromString(ctx, driver, name)
 	if err != nil {
 		return err
 	}
