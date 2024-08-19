@@ -34,3 +34,17 @@ func Create(path string) (*os.File, error) {
 	}
 	return os.Create(path)
 }
+
+// Exists checks if a file or directory exists.
+// If the file or directory does not exist, it returns false and nil error.
+// If the file or directory is not accessible, it returns false and error.
+func Exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	return false, err
+}

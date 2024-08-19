@@ -10,10 +10,17 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
+	"github.com/wuxler/ruasec/pkg/image"
+	imageremote "github.com/wuxler/ruasec/pkg/image/remote"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	"github.com/wuxler/ruasec/pkg/ocispec/name"
 	ocispecremote "github.com/wuxler/ruasec/pkg/ocispec/remote"
 	"github.com/wuxler/ruasec/pkg/util/xdocker"
+)
+
+const (
+	// RemoteRegistryFlagCategory is the category name for remote registry flags.
+	RemoteRegistryFlagCategory = "[Remote Registry]"
 )
 
 // NewRemoteRegistryOptions returns a *RemoteRegistryOptions with default values.
@@ -39,6 +46,7 @@ func (o *RemoteRegistryOptions) Flags() []cli.Flag {
 			Sources:     cli.EnvVars("RUA_REGISTRY_INSECURE"),
 			Destination: &o.Insecure,
 			Value:       o.Insecure,
+			Category:    RemoteRegistryFlagCategory,
 		},
 		&cli.StringSliceFlag{
 			Name:        "ca-files",
@@ -54,6 +62,7 @@ func (o *RemoteRegistryOptions) Flags() []cli.Flag {
 				}
 				return errors.Join(errs...)
 			},
+			Category: RemoteRegistryFlagCategory,
 		},
 		&cli.StringFlag{
 			Name:        "auth-file",
@@ -61,6 +70,7 @@ func (o *RemoteRegistryOptions) Flags() []cli.Flag {
 			Sources:     cli.EnvVars("RUA_REGISTRY_AUTH_FILE"),
 			Destination: &o.AuthFile,
 			Value:       o.AuthFile,
+			Category:    RemoteRegistryFlagCategory,
 		},
 	}
 }
@@ -96,6 +106,16 @@ func (o *RemoteRegistryOptions) NewDistributionClient() (*ocispecremote.Client, 
 	return client, nil
 }
 
+// MakeRemoteOptions returns the options for the remote client.
+func (o *RemoteRegistryOptions) MakeRemoteOptions() ([]remote.Option, error) {
+	client, err := o.NewDistributionClient()
+	if err != nil {
+		return nil, err
+	}
+	opts := []remote.Option{remote.WithHTTPClient(client)}
+	return opts, nil
+}
+
 // NewRegistry returns the remote registry client for the target named.
 func (o *RemoteRegistryOptions) NewRegistry(ctx context.Context, target name.Registry) (*remote.Registry, error) {
 	opts, err := o.MakeRemoteOptions()
@@ -114,12 +134,11 @@ func (o *RemoteRegistryOptions) NewRepository(ctx context.Context, target name.R
 	return remote.NewRepository(ctx, target, opts...)
 }
 
-// MakeRemoteOptions returns the options for the remote client.
-func (o *RemoteRegistryOptions) MakeRemoteOptions() ([]remote.Option, error) {
-	client, err := o.NewDistributionClient()
+// NewImageStorage returns the image storage with the remote registry client.
+func (o *RemoteRegistryOptions) NewImageStorage(ctx context.Context, target name.Registry) (image.Storage, error) {
+	client, err := o.NewRegistry(ctx, target)
 	if err != nil {
 		return nil, err
 	}
-	opts := []remote.Option{remote.WithHTTPClient(client)}
-	return opts, nil
+	return imageremote.NewStorage(client), nil
 }

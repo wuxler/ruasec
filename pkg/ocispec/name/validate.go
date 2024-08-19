@@ -28,7 +28,7 @@ func ValidateRegistryScheme(scheme string) error {
 	if scheme == "" {
 		return nil
 	}
-	allowed := []string{"http", "https"}
+	allowed := AllRegisteredSchemes()
 	if slices.Contains(allowed, scheme) {
 		return nil
 	}

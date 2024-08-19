@@ -1,6 +1,9 @@
 package pathspec
 
-import "path/filepath"
+import (
+	"path/filepath"
+	"strings"
+)
 
 // DataRoot is a type for the data root directory of the docker daemon.
 // Normally default to "/var/lib/docker".
@@ -16,55 +19,62 @@ func (r DataRoot) String() string {
 	return string(r)
 }
 
-// DriverRootDir returns the DriverDir with driver name related as input, like "ovarlay2"
-func (r DataRoot) DriverRootDir(name string) DriverRoot {
+// Rel returns the relative path to the {DataRoot}.
+func (r DataRoot) Rel(path string) string {
+	rpath := strings.TrimPrefix(path, r.String())
+	rpath = strings.TrimPrefix(rpath, string(filepath.Separator))
+	return rpath
+}
+
+// DriverRoot returns the DriverRoot with driver name related as input, like "ovarlay2"
+func (r DataRoot) DriverRoot(name string) DriverRoot {
 	return DriverRoot{
 		root: r,
 		name: name,
 	}
 }
 
-// ImageDir returns the path to {RootDir}/image, like "/var/lib/docker/image"
+// ImageDir returns the path to {DataRoot}/image, like "/var/lib/docker/image"
 func (r DataRoot) ImageDir() string {
 	return r.pathTo("image")
 }
 
-// TrustDir returns the path to {RootDir}/trust, like "/var/lib/docker/trust"
+// TrustDir returns the path to {DataRoot}/trust, like "/var/lib/docker/trust"
 func (r DataRoot) TrustDir() string {
 	return r.pathTo("trust")
 }
 
-// ContainersDir returns the path to {RootDir}/containers, like "/var/lib/docker/containers"
+// ContainersDir returns the path to {DataRoot}/containers, like "/var/lib/docker/containers"
 func (r DataRoot) ContainersDir() string {
 	return r.pathTo("containers")
 }
 
-// RuntimesDir returns the path to {RootDir}/runtimes, like "/var/lib/docker/runtimes"
+// RuntimesDir returns the path to {DataRoot}/runtimes, like "/var/lib/docker/runtimes"
 func (r DataRoot) RuntimesDir() string {
 	return r.pathTo("runtimes")
 }
 
-// PluginsDir returns the path to {RootDir}/plugins, like "/var/lib/docker/plugins"
+// PluginsDir returns the path to {DataRoot}/plugins, like "/var/lib/docker/plugins"
 func (r DataRoot) PluginsDir() string {
 	return r.pathTo("plugins")
 }
 
-// VolumesDir returns the path to {RootDir}/volumes, like "/var/lib/docker/volumes"
+// VolumesDir returns the path to {DataRoot}/volumes, like "/var/lib/docker/volumes"
 func (r DataRoot) VolumesDir() string {
 	return r.pathTo("volumes")
 }
 
-// BuildkitDir returns the path to {RootDir}/buildkit, like "/var/lib/docker/buildkit"
+// BuildkitDir returns the path to {DataRoot}/buildkit, like "/var/lib/docker/buildkit"
 func (r DataRoot) BuildkitDir() string {
 	return r.pathTo("buildkit")
 }
 
-// NetworkDir returns the path to {RootDir}/network, like "/var/lib/docker/network"
+// NetworkDir returns the path to {DataRoot}/network, like "/var/lib/docker/network"
 func (r DataRoot) NetworkDir() string {
 	return r.pathTo("network")
 }
 
-// SwarmDir returns the path to {RootDir}/swarm, like "/var/lib/docker/swarm"
+// SwarmDir returns the path to {DataRoot}/swarm, like "/var/lib/docker/swarm"
 func (r DataRoot) SwarmDir() string {
 	return r.pathTo("swarm")
 }

@@ -36,7 +36,8 @@ var (
 // registry with the given "ctx".
 func NewSpec(ctx context.Context, name ocispecname.Registry, opts ...Option) (*Spec, error) {
 	options := MakeOptions(opts...)
-	if name.Scheme() == "" {
+	scheme := name.Scheme()
+	if scheme == "" || (scheme != "http" && scheme != "https") {
 		scheme, err := remote.DetectScheme(ctx, options.Client, name.Hostname())
 		if err != nil {
 			return nil, err

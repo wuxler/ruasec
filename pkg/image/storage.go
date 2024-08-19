@@ -7,11 +7,11 @@ import (
 	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
 )
 
-// Driver is the common interface for image backend storages. It must be implemented by
+// Storage is the common interface for image backend storages. It must be implemented by
 // all image backends.
-type Driver interface {
-	// Name returns the unique identity name of the provider.
-	Name() string
+type Storage interface {
+	// Type returns the unique identity type of the provider.
+	Type() string
 	Getter
 }
 

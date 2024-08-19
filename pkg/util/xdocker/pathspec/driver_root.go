@@ -2,7 +2,6 @@ package pathspec
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,9 +22,10 @@ func (d DriverRoot) String() string {
 	return d.Path()
 }
 
-// Root returns the path to docker data root directory.
-func (d DriverRoot) Root() DataRoot {
-	return d.root
+// Path returns the path to the driver directory {RootDir}/{Driver},
+// like /var/lib/docker/overlay2
+func (d DriverRoot) Path() string {
+	return d.root.pathTo(d.name)
 }
 
 // Name returns the driver name.
@@ -33,10 +33,9 @@ func (d DriverRoot) Name() string {
 	return d.name
 }
 
-// Path returns the path to the driver directory {RootDir}/{Driver},
-// like /var/lib/docker/overlay2
-func (d DriverRoot) Path() string {
-	return d.root.pathTo(d.name)
+// DataRoot returns the path to docker data root directory.
+func (d DriverRoot) DataRoot() DataRoot {
+	return d.root
 }
 
 // ImageRootDir returns the path to the driver image directory {RootDir}/image/{Driver},
@@ -156,49 +155,10 @@ func (d DriverRoot) LayerMetadataTarSplitFile(chainid digest.Digest) string {
 	return filepath.Join(d.LayerMetadataDir(chainid), "tar-split.json.gz")
 }
 
-// NewDriverFS returns a DriverFS instance.
-func NewDriverFS(root string, driverName string) *DriverFS {
-	dataRoot := DataRoot(root)
-	return &DriverFS{
-		dataRoot:   dataRoot,
-		driverRoot: dataRoot.DriverRootDir(driverName),
-		rootfs:     os.DirFS(root),
-	}
-}
-
-// DriverFS is a driver filesystem.
-type DriverFS struct {
-	dataRoot   DataRoot
-	driverRoot DriverRoot
-	rootfs     fs.FS
-}
-
-// DriverRootDir returns the driver root directory.
-func (s *DriverFS) DriverRootDir() DriverRoot {
-	return s.driverRoot
-}
-
-// DataRootDir returns the data root directory.
-func (s *DriverFS) DataRootDir() DataRoot {
-	return s.dataRoot
-}
-
-// RootFS returns the data root filesystem.
-func (s *DriverFS) RootFS() fs.FS {
-	return s.rootfs
-}
-
-// relative returns the relative path to the {RootDir}.
-func (s *DriverFS) relative(path string) string {
-	rpath := strings.TrimPrefix(path, s.dataRoot.String())
-	rpath = strings.TrimPrefix(rpath, string(filepath.Separator))
-	return rpath
-}
-
 // ReadLayerMetadataDiffID returns the layer metadata DiffID with the given ChainID.
-func (s DriverFS) ReadLayerMetadataDiffID(chainid digest.Digest) (digest.Digest, error) {
-	path := s.driverRoot.LayerMetadataDiffFile(chainid)
-	content, err := fs.ReadFile(s.rootfs, s.relative(path))
+func (d DriverRoot) ReadLayerMetadataDiffID(chainid digest.Digest) (digest.Digest, error) {
+	path := d.LayerMetadataDiffFile(chainid)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
 	}
@@ -210,9 +170,9 @@ func (s DriverFS) ReadLayerMetadataDiffID(chainid digest.Digest) (digest.Digest,
 }
 
 // ReadLayerMetadataCacheID returns the layer metadata CacheID with the given ChainID.
-func (s DriverFS) ReadLayerMetadataCacheID(chainid digest.Digest) (string, error) {
-	path := s.driverRoot.LayerMetadataCacheIDFile(chainid)
-	content, err := fs.ReadFile(s.rootfs, s.relative(path))
+func (d DriverRoot) ReadLayerMetadataCacheID(chainid digest.Digest) (string, error) {
+	path := d.LayerMetadataCacheIDFile(chainid)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
 	}
@@ -224,9 +184,9 @@ func (s DriverFS) ReadLayerMetadataCacheID(chainid digest.Digest) (string, error
 }
 
 // ReadLayerMetadataParent returns the layer metadata parent ChainID with the given ChainID.
-func (s DriverFS) ReadLayerMetadataParent(chainid digest.Digest) (digest.Digest, error) {
-	path := s.driverRoot.LayerMetadataParentFile(chainid)
-	content, err := fs.ReadFile(s.rootfs, s.relative(path))
+func (d DriverRoot) ReadLayerMetadataParent(chainid digest.Digest) (digest.Digest, error) {
+	path := d.LayerMetadataParentFile(chainid)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", nil
@@ -241,9 +201,9 @@ func (s DriverFS) ReadLayerMetadataParent(chainid digest.Digest) (digest.Digest,
 }
 
 // ReadLayerMetadataSize returns the layer metadata Size with the given ChainID.
-func (s DriverFS) ReadLayerMetadataSize(chainid digest.Digest) (int64, error) {
-	path := s.driverRoot.LayerMetadataSizeFile(chainid)
-	content, err := fs.ReadFile(s.rootfs, s.relative(path))
+func (d DriverRoot) ReadLayerMetadataSize(chainid digest.Digest) (int64, error) {
+	path := d.LayerMetadataSizeFile(chainid)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return 0, err
 	}
@@ -255,9 +215,9 @@ func (s DriverFS) ReadLayerMetadataSize(chainid digest.Digest) (int64, error) {
 }
 
 // ValidateLayer validates the layer metadata directory with the given ChainID.
-func (s DriverFS) ValidateLayer(chainid digest.Digest) error {
-	path := s.driverRoot.LayerMetadataDir(chainid)
-	fi, err := fs.Stat(s.rootfs, s.relative(path))
+func (d DriverRoot) ValidateLayer(chainid digest.Digest) error {
+	path := d.LayerMetadataDir(chainid)
+	fi, err := os.Stat(path)
 	if err != nil {
 		return err
 	}
@@ -268,14 +228,15 @@ func (s DriverFS) ValidateLayer(chainid digest.Digest) error {
 }
 
 // ReadImageConfigBytes returns the image config bytes with the given ImageID.
-func (s DriverFS) ReadImageConfigBytes(imageid digest.Digest) ([]byte, error) {
-	return fs.ReadFile(s.rootfs, s.relative(s.driverRoot.ImageConfigFile(imageid)))
+func (d DriverRoot) ReadImageConfigBytes(imageid digest.Digest) ([]byte, error) {
+	path := d.ImageConfigFile(imageid)
+	return os.ReadFile(path)
 }
 
 // ReadImageMetadataParent returns the parent ImageID with the given ImageID.
-func (s DriverFS) ReadImageMetadataParent(imageid digest.Digest) (digest.Digest, error) {
-	path := s.driverRoot.ImageMetadataParentFile(imageid)
-	content, err := fs.ReadFile(s.rootfs, s.relative(path))
+func (d DriverRoot) ReadImageMetadataParent(imageid digest.Digest) (digest.Digest, error) {
+	path := d.ImageMetadataParentFile(imageid)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", nil
@@ -290,9 +251,9 @@ func (s DriverFS) ReadImageMetadataParent(imageid digest.Digest) (digest.Digest,
 }
 
 // ReadImageMetadataLastUpdated returns the last updated time with the given ImageID.
-func (s DriverFS) ReadImageMetadataLastUpdated(imageid digest.Digest) (time.Time, error) {
-	path := s.driverRoot.ImageMetadataLastUpdatedFile(imageid)
-	content, err := fs.ReadFile(s.rootfs, s.relative(path))
+func (d DriverRoot) ReadImageMetadataLastUpdated(imageid digest.Digest) (time.Time, error) {
+	path := d.ImageMetadataLastUpdatedFile(imageid)
+	content, err := os.ReadFile(path)
 	var zero time.Time
 	if err != nil {
 		if os.IsNotExist(err) {

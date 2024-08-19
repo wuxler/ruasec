@@ -8,7 +8,7 @@ import (
 )
 
 // NewImageFromString returns the image specified by string name with the given driver.
-func NewImageFromString(ctx context.Context, driver Driver, name string, opts ...ImageOption) (ocispec.ImageCloser, error) {
+func NewImageFromString(ctx context.Context, storage Storage, name string, opts ...ImageOption) (ocispec.ImageCloser, error) {
 	ref, err := ocispecname.NewReference(name)
 	if err != nil {
 		return nil, err
@@ -17,5 +17,5 @@ func NewImageFromString(ctx context.Context, driver Driver, name string, opts ..
 		// override metadata name with raw input
 		metadata.Name = name
 	}))
-	return driver.GetImage(ctx, ref, opts...)
+	return storage.GetImage(ctx, ref, opts...)
 }

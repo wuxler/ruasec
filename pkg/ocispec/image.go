@@ -3,7 +3,6 @@ package ocispec
 import (
 	"context"
 	"io"
-	"io/fs"
 
 	"github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
@@ -63,7 +62,7 @@ type BlobLayer interface {
 // FSLayer represents a file-system based Layer object.
 type FSLayer interface {
 	Layer
-	DiffFS(ctx context.Context) (fs.FS, error)
+	FSGetter
 }
 
 // ImageMetadata represents the metadata of an image.

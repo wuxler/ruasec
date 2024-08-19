@@ -10,7 +10,7 @@ import (
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
 	"github.com/wuxler/ruasec/pkg/image"
-	"github.com/wuxler/ruasec/pkg/image/remote"
+	"github.com/wuxler/ruasec/pkg/ocispec"
 	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 )
@@ -27,7 +27,7 @@ type ImageCommand struct{}
 func (c *ImageCommand) ToCLI() *cli.Command {
 	return &cli.Command{
 		Name:    "image",
-		Aliases: []string{"img"},
+		Aliases: []string{"i"},
 		Usage:   "Container image operations",
 		Commands: []*cli.Command{
 			NewConfigFetchCommand().ToCLI(),
@@ -38,12 +38,12 @@ func (c *ImageCommand) ToCLI() *cli.Command {
 // NewConfigFetchCommand returns a command with default values.
 func NewConfigFetchCommand() *ConfigFetchCommand {
 	return &ConfigFetchCommand{
-		RemoteRegistryOptions: options.NewRemoteRegistryOptions(),
+		Image: options.NewImageOptions(),
 	}
 }
 
 type ConfigFetchCommand struct {
-	*options.RemoteRegistryOptions
+	Image  *options.ImageOptions
 	Pretty bool `json:"pretty,omitempty" yaml:"pretty,omitempty"`
 }
 
@@ -52,13 +52,22 @@ func (c *ConfigFetchCommand) ToCLI() *cli.Command {
 	return &cli.Command{
 		Name:  "config",
 		Usage: "Get the config file of an image",
-		UsageText: `rua image config [OPTIONS] IMAGE
+		UsageText: `rua image config [OPTIONS] [SCHEME://]IMAGE
 
 # Fetch the raw image config file
 $ rua image config hello-world:latest
 
 # Fetch the image config file and prettify the output
 $ rua image config --pretty hello-world:latest
+
+# Fetch the image config from docker-rootfs storage type specified
+$ rua image config --storage-type docker-rootfs hello-world:latest
+$ rua image config docker-rootfs://hello-world:latest
+
+# Fetch the image config from remote storage type specified
+$ rua image config --storage-type remote hello-world:latest
+$ rua image config remote://hello-world:latest
+$ rua image config https://hello-world:latest
 `,
 		ArgsUsage: "IMAGE",
 		Flags:     c.Flags(),
@@ -77,25 +86,26 @@ func (c *ConfigFetchCommand) Flags() []cli.Flag {
 			Value:       c.Pretty,
 		},
 	}
-	return append(c.RemoteRegistryOptions.Flags(), local...)
+	return append(c.Image.Flags(), local...)
 }
 
 // Run is the main function for the current command
 func (c *ConfigFetchCommand) Run(ctx context.Context, cmd *cli.Command) error {
 	name := cmd.Args().First()
-
-	target, err := ocispecname.NewReference(name)
+	ref, err := ocispecname.NewReference(name)
 	if err != nil {
 		return err
 	}
 
-	client, err := c.NewRegistry(ctx, target.Repository().Domain())
+	storage, err := c.Image.NewImageStorage(ctx, ref)
 	if err != nil {
 		return err
 	}
 
-	driver := remote.NewDriver(client)
-	img, err := image.NewImageFromString(ctx, driver, name)
+	img, err := storage.GetImage(ctx, ref, image.WithMetadataApplier(func(meta *ocispec.ImageMetadata) {
+		// override metadata name with raw input
+		meta.Name = name
+	}))
 	if err != nil {
 		return err
 	}
