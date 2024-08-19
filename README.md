@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/github/wuxler/ruasec/graph/badge.svg?token=UJ0PNEM161)](https://codecov.io/github/wuxler/ruasec)
 [![Godoc Reference](https://godoc.org/github.com/mattn/go-isatty?status.svg)](https://pkg.go.dev/github.com/wuxler/ruasec?status.svg)
 ![License Apache2.0](https://img.shields.io/badge/License-Apache2.0-blue.svg)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fwuxler%2Fruasec.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fwuxler%2Fruasec?ref=badge_shield)
 
 RuaSec 是一个安全扫描工具，用于扫描镜像、代码、制品等中的安全漏洞。
 
@@ -30,3 +31,7 @@ TBD
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=wuxler/ruasec&type=Date)](https://star-history.com/#wuxler/ruasec&Date)
+
+## License
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fwuxler%2Fruasec.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fwuxler%2Fruasec?ref=badge_large)
