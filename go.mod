@@ -16,7 +16,7 @@ require (
 	github.com/samber/lo v1.46.0
 	github.com/smallnest/deepcopy v1.0.0
 	github.com/spf13/afero v1.11.0
-	github.com/spf13/cast v1.6.0
+	github.com/spf13/cast v1.7.0
 	github.com/stretchr/testify v1.9.0
 	github.com/therootcompany/xz v1.0.1
 	github.com/ulikunitz/xz v0.5.12
