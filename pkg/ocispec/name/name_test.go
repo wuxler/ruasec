@@ -12,6 +12,11 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec/name"
 )
 
+func init() {
+	name.RegisterScheme("http")
+	name.RegisterScheme("https")
+}
+
 func subTestName(tName string, good bool, notes ...string) string {
 	if tName == "" {
 		tName = "empty"

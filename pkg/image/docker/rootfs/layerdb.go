@@ -42,7 +42,7 @@ func (db *layerDB) GetAllLayerChainIDs(ctx context.Context) ([]digest.Digest, er
 	dir := db.DriverRoot.LayerDBDir()
 	for _, algorithm := range supportedAlgorithms {
 		path := filepath.Join(dir, algorithm.String())
-		if err := xcontext.NonBlockingCheck(ctx, "readdir "+path); err != nil {
+		if err := xcontext.NonBlockingCheck(ctx, path); err != nil {
 			return nil, err
 		}
 		entries, err := os.ReadDir(path)
@@ -53,7 +53,7 @@ func (db *layerDB) GetAllLayerChainIDs(ctx context.Context) ([]digest.Digest, er
 			return nil, err
 		}
 		for _, entry := range entries {
-			if err := xcontext.NonBlockingCheck(ctx, "readdir "+path); err != nil {
+			if err := xcontext.NonBlockingCheck(ctx, path); err != nil {
 				return nil, err
 			}
 			if !entry.IsDir() || entry.Name() == "mounts" {

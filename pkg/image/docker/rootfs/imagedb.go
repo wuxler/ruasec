@@ -37,7 +37,7 @@ func (db *imageDB) GetAllImageIDs(ctx context.Context) ([]digest.Digest, error) 
 	dir := db.DriverRoot.ImageDBDir()
 	for _, algorithm := range supportedAlgorithms {
 		path := filepath.Join(dir, "content", algorithm.String())
-		if err := xcontext.NonBlockingCheck(ctx, "readdir "+path); err != nil {
+		if err := xcontext.NonBlockingCheck(ctx, path); err != nil {
 			return nil, err
 		}
 		entries, err := os.ReadDir(path)
@@ -48,7 +48,7 @@ func (db *imageDB) GetAllImageIDs(ctx context.Context) ([]digest.Digest, error) 
 			return nil, err
 		}
 		for _, entry := range entries {
-			if err := xcontext.NonBlockingCheck(ctx, "readdir "+path); err != nil {
+			if err := xcontext.NonBlockingCheck(ctx, path); err != nil {
 				return nil, err
 			}
 			if !entry.Type().IsRegular() {

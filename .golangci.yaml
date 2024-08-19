@@ -236,8 +236,9 @@ linters-settings:
     custom-order: true
 
   goconst:
-    min-len: 2
-    min-occurrences: 2
+    min-len: 3
+    min-occurrences: 3
+    ignore-tests: true
 
   gocyclo:
     min-complexity: 30
