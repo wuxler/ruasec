@@ -10,10 +10,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
-	"github.com/wuxler/ruasec/pkg/image"
-	imageremote "github.com/wuxler/ruasec/pkg/image/remote"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
-	"github.com/wuxler/ruasec/pkg/ocispec/name"
 	ocispecremote "github.com/wuxler/ruasec/pkg/ocispec/remote"
 	"github.com/wuxler/ruasec/pkg/util/xdocker"
 )
@@ -106,39 +103,12 @@ func (o *RemoteRegistryOptions) NewDistributionClient() (*ocispecremote.Client, 
 	return client, nil
 }
 
-// MakeRemoteOptions returns the options for the remote client.
-func (o *RemoteRegistryOptions) MakeRemoteOptions() ([]remote.Option, error) {
-	client, err := o.NewDistributionClient()
+// NewDistributionClient returns distribution remote client options.
+func MakeDistributionOptions(ctx context.Context, commonOpts *CommonOptions, remoteOpts *RemoteRegistryOptions) ([]remote.Option, error) {
+	client, err := remoteOpts.NewDistributionClient()
 	if err != nil {
 		return nil, err
 	}
-	opts := []remote.Option{remote.WithHTTPClient(client)}
-	return opts, nil
-}
-
-// NewRegistry returns the remote registry client for the target named.
-func (o *RemoteRegistryOptions) NewRegistry(ctx context.Context, target name.Registry) (*remote.Registry, error) {
-	opts, err := o.MakeRemoteOptions()
-	if err != nil {
-		return nil, err
-	}
-	return remote.NewRegistry(ctx, target, opts...)
-}
-
-// NewRepository returns the remote repository client for the target named.
-func (o *RemoteRegistryOptions) NewRepository(ctx context.Context, target name.Repository) (*remote.Repository, error) {
-	opts, err := o.MakeRemoteOptions()
-	if err != nil {
-		return nil, err
-	}
-	return remote.NewRepository(ctx, target, opts...)
-}
-
-// NewImageStorage returns the image storage with the remote registry client.
-func (o *RemoteRegistryOptions) NewImageStorage(ctx context.Context, target name.Registry) (image.Storage, error) {
-	client, err := o.NewRegistry(ctx, target)
-	if err != nil {
-		return nil, err
-	}
-	return imageremote.NewStorage(client), nil
+	commonOpts.ApplyDistributionClient(client)
+	return []remote.Option{remote.WithHTTPClient(client)}, nil
 }

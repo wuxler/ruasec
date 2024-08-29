@@ -8,6 +8,7 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
+	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	"github.com/wuxler/ruasec/pkg/ocispec/iter"
 	"github.com/wuxler/ruasec/pkg/ocispec/name"
 )
@@ -34,13 +35,15 @@ func (c *RepositoryCommand) ToCLI() *cli.Command {
 // NewRepositoryTagsCommand returns a command with default values.
 func NewRepositoryTagsCommand() *RepositoryTagsCommand {
 	return &RepositoryTagsCommand{
-		RemoteRegistryOptions: options.NewRemoteRegistryOptions(),
+		Common: options.NewCommonOptions(),
+		Remote: options.NewRemoteRegistryOptions(),
 	}
 }
 
 // RepositoryTagsCommand used to list tags in the remote repository.
 type RepositoryTagsCommand struct {
-	*options.RemoteRegistryOptions
+	Common *options.CommonOptions
+	Remote *options.RemoteRegistryOptions
 }
 
 // ToCLI transforms to a *cli.Command.
@@ -62,7 +65,10 @@ $ rua registry repo tags example.registry.com/my/repo
 
 // Flags defines the flags related to the current command.
 func (c *RepositoryTagsCommand) Flags() []cli.Flag {
-	return c.RemoteRegistryOptions.Flags()
+	flags := []cli.Flag{}
+	flags = append(flags, c.Common.Flags()...)
+	flags = append(flags, c.Remote.Flags()...)
+	return flags
 }
 
 // Run is the main function for the current command
@@ -71,7 +77,11 @@ func (c *RepositoryTagsCommand) Run(ctx context.Context, cmd *cli.Command) error
 	if err != nil {
 		return err
 	}
-	repo, err := c.NewRepository(ctx, target)
+	opts, err := options.MakeDistributionOptions(ctx, c.Common, c.Remote)
+	if err != nil {
+		return err
+	}
+	repo, err := remote.NewRepository(ctx, target, opts...)
 	if err != nil {
 		return err
 	}

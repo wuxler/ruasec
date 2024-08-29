@@ -8,6 +8,7 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
+	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	"github.com/wuxler/ruasec/pkg/ocispec/iter"
 	"github.com/wuxler/ruasec/pkg/ocispec/name"
 )
@@ -15,13 +16,15 @@ import (
 // NewCatalogCommand returns a command with default values.
 func NewCatalogCommand() *CatalogCommand {
 	return &CatalogCommand{
-		RemoteRegistryOptions: options.NewRemoteRegistryOptions(),
+		Common: options.NewCommonOptions(),
+		Remote: options.NewRemoteRegistryOptions(),
 	}
 }
 
 // CatalogCommand is used to list repositories in the remote registry.
 type CatalogCommand struct {
-	*options.RemoteRegistryOptions
+	Common *options.CommonOptions
+	Remote *options.RemoteRegistryOptions
 }
 
 // ToCLI transforms to a *cli.Command.
@@ -44,7 +47,10 @@ $ rua registry catalog example.registry.com
 
 // Flags defines the flags related to the current command.
 func (c *CatalogCommand) Flags() []cli.Flag {
-	return c.RemoteRegistryOptions.Flags()
+	flags := []cli.Flag{}
+	flags = append(flags, c.Common.Flags()...)
+	flags = append(flags, c.Remote.Flags()...)
+	return flags
 }
 
 // Run is the main function for the current command
@@ -53,7 +59,11 @@ func (c *CatalogCommand) Run(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	registry, err := c.NewRegistry(ctx, target)
+	opts, err := options.MakeDistributionOptions(ctx, c.Common, c.Remote)
+	if err != nil {
+		return err
+	}
+	registry, err := remote.NewRegistry(ctx, target, opts...)
 	if err != nil {
 		return err
 	}

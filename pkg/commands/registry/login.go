@@ -22,13 +22,15 @@ import (
 // NewLoginCommand returns a LoginCommand with default values.
 func NewLoginCommand() *LoginCommand {
 	return &LoginCommand{
-		RemoteRegistryOptions: options.NewRemoteRegistryOptions(),
+		Common: options.NewCommonOptions(),
+		Remote: options.NewRemoteRegistryOptions(),
 	}
 }
 
 // LoginCommand used to login remote registry.
 type LoginCommand struct {
-	*options.RemoteRegistryOptions
+	Common *options.CommonOptions
+	Remote *options.RemoteRegistryOptions
 
 	Username      string `json:"username,omitempty" yaml:"username,omitempty"`
 	Password      string `json:"password,omitempty" yaml:"password,omitempty"`
@@ -63,7 +65,7 @@ $ rua registry login --insecure registry.example.com
 
 // Flags defines the flags related to the current command.
 func (c *LoginCommand) Flags() []cli.Flag {
-	local := []cli.Flag{
+	flags := []cli.Flag{
 		&cli.StringFlag{
 			Name:        "username",
 			Aliases:     []string{"u"},
@@ -88,7 +90,9 @@ func (c *LoginCommand) Flags() []cli.Flag {
 			Value:       c.PasswordStdin,
 		},
 	}
-	return append(c.RemoteRegistryOptions.Flags(), local...)
+	flags = append(flags, c.Remote.Flags()...)
+	flags = append(flags, c.Common.Flags()...)
+	return flags
 }
 
 // Validate validates commands flags.
@@ -128,14 +132,15 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	authFile := authfile.NewAuthFile(c.AuthFile)
+	authFile := authfile.NewAuthFile(c.Remote.AuthFile)
 	if err := authFile.Load(); err != nil {
 		cmdhelper.Fprintf(cmd.Writer, "Warning: Failed to load auth file: %s", err)
 	}
-	client, err := c.NewDistributionClient()
+	client, err := c.Remote.NewDistributionClient()
 	if err != nil {
 		return err
 	}
+	c.Common.ApplyDistributionClient(client)
 
 	if c.Password == "" && c.Username == "" {
 		// try to login with the crendetial found in default auth files
@@ -176,7 +181,7 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	// store the validate credential
-	cmdhelper.Fprintf(cmd.Writer, "Warning: Your password will be stored unencryped in %s", c.AuthFile)
+	cmdhelper.Fprintf(cmd.Writer, "Warning: Your password will be stored unencryped in %s", c.Remote.AuthFile)
 	store := credentials.NewFileStore(authFile)
 	if err := store.Store(ctx, serverAddress, authConfig); err != nil {
 		return err

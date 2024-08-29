@@ -17,6 +17,7 @@ import (
 	"github.com/wuxler/ruasec/pkg/errdefs"
 	"github.com/wuxler/ruasec/pkg/ocispec"
 	"github.com/wuxler/ruasec/pkg/ocispec/cas"
+	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	"github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 )
@@ -56,13 +57,15 @@ $ rua registry manifest --pretty hello-world:latest
 // NewManifestFetchCommand returns a manifest fetch command with default values.
 func NewManifestFetchCommand() *ManifestFetchCommand {
 	return &ManifestFetchCommand{
-		RemoteRegistryOptions: options.NewRemoteRegistryOptions(),
+		Common: options.NewCommonOptions(),
+		Remote: options.NewRemoteRegistryOptions(),
 	}
 }
 
 // ManifestFetchCommand used to fetch the image manifest from the remote registry.
 type ManifestFetchCommand struct {
-	*options.RemoteRegistryOptions
+	Common *options.CommonOptions
+	Remote *options.RemoteRegistryOptions
 	Pretty bool `json:"pretty,omitempty" yaml:"pretty,omitempty"`
 }
 
@@ -88,7 +91,7 @@ $ rua registry manifest fetch --pretty hello-world:latest
 
 // Flags defines the flags related to the current command.
 func (c *ManifestFetchCommand) Flags() []cli.Flag {
-	local := []cli.Flag{
+	flags := []cli.Flag{
 		&cli.BoolFlag{
 			Name:        "pretty",
 			Usage:       "prettify to output",
@@ -96,7 +99,9 @@ func (c *ManifestFetchCommand) Flags() []cli.Flag {
 			Value:       c.Pretty,
 		},
 	}
-	return append(c.RemoteRegistryOptions.Flags(), local...)
+	flags = append(flags, c.Common.Flags()...)
+	flags = append(flags, c.Remote.Flags()...)
+	return flags
 }
 
 // Run is the main function for the current command
@@ -110,7 +115,12 @@ func (c *ManifestFetchCommand) Run(ctx context.Context, cmd *cli.Command) error 
 		return err
 	}
 
-	repository, err := c.NewRepository(ctx, target.Repository())
+	opts, err := options.MakeDistributionOptions(ctx, c.Common, c.Remote)
+	if err != nil {
+		return err
+	}
+
+	repository, err := remote.NewRepository(ctx, target.Repository(), opts...)
 	if err != nil {
 		return err
 	}
@@ -140,18 +150,23 @@ func (c *ManifestFetchCommand) Run(ctx context.Context, cmd *cli.Command) error 
 // NewManifestStatCommand returns a manifest stat command with default values.
 func NewManifestStatCommand() *ManifestStatCommand {
 	return &ManifestStatCommand{
-		RemoteRegistryOptions: options.NewRemoteRegistryOptions(),
+		Common: options.NewCommonOptions(),
+		Remote: options.NewRemoteRegistryOptions(),
 	}
 }
 
 // ManifestStatCommand used to stat the descriptor of the target manifest from the remote registry.
 type ManifestStatCommand struct {
-	*options.RemoteRegistryOptions
+	Common *options.CommonOptions
+	Remote *options.RemoteRegistryOptions
 }
 
 // Flags defines the flags related to the current command.
 func (c *ManifestStatCommand) Flags() []cli.Flag {
-	return c.RemoteRegistryOptions.Flags()
+	flags := []cli.Flag{}
+	flags = append(flags, c.Common.Flags()...)
+	flags = append(flags, c.Remote.Flags()...)
+	return flags
 }
 
 // ToCLI transforms to a *cli.Command.
@@ -182,7 +197,12 @@ func (c *ManifestStatCommand) Run(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	repository, err := c.NewRepository(ctx, target.Repository())
+	opts, err := options.MakeDistributionOptions(ctx, c.Common, c.Remote)
+	if err != nil {
+		return err
+	}
+
+	repository, err := remote.NewRepository(ctx, target.Repository(), opts...)
 	if err != nil {
 		return err
 	}
@@ -202,14 +222,16 @@ func (c *ManifestStatCommand) Run(ctx context.Context, cmd *cli.Command) error {
 // NewManifestDeleteCommand returns a manifest delete command with default values.
 func NewManifestDeleteCommand() *ManifestDeleteCommand {
 	return &ManifestDeleteCommand{
-		RemoteRegistryOptions: options.NewRemoteRegistryOptions(),
+		Common: options.NewCommonOptions(),
+		Remote: options.NewRemoteRegistryOptions(),
 	}
 }
 
 // ManifestDeleteCommand is used to delete the target manifest.
 type ManifestDeleteCommand struct {
-	*options.RemoteRegistryOptions
-	Force bool `json:"force,omitempty" yaml:"force,omitempty"`
+	Common *options.CommonOptions
+	Remote *options.RemoteRegistryOptions
+	Force  bool `json:"force,omitempty" yaml:"force,omitempty"`
 }
 
 // ToCLI transforms to a *cli.Command.
@@ -231,7 +253,7 @@ $ rua registry manifest delete hello-world:latest
 
 // Flags defines the flags related to the current command.
 func (c *ManifestDeleteCommand) Flags() []cli.Flag {
-	local := []cli.Flag{
+	flags := []cli.Flag{
 		&cli.BoolFlag{
 			Name:        "force",
 			Aliases:     []string{"f"},
@@ -240,7 +262,9 @@ func (c *ManifestDeleteCommand) Flags() []cli.Flag {
 			Value:       c.Force,
 		},
 	}
-	return append(c.RemoteRegistryOptions.Flags(), local...)
+	flags = append(flags, c.Common.Flags()...)
+	flags = append(flags, c.Remote.Flags()...)
+	return flags
 }
 
 // Run is the main function for the current command
@@ -254,10 +278,17 @@ func (c *ManifestDeleteCommand) Run(ctx context.Context, cmd *cli.Command) error
 	if err != nil {
 		return err
 	}
-	repository, err := c.NewRepository(ctx, target.Repository())
+
+	opts, err := options.MakeDistributionOptions(ctx, c.Common, c.Remote)
 	if err != nil {
 		return err
 	}
+
+	repository, err := remote.NewRepository(ctx, target.Repository(), opts...)
+	if err != nil {
+		return err
+	}
+
 	desc, err := repository.Manifests().Stat(ctx, tagOrDigest)
 	if err != nil {
 		if errors.Is(err, errdefs.ErrNotFound) {
@@ -306,13 +337,15 @@ func (c *ManifestDeleteCommand) Run(ctx context.Context, cmd *cli.Command) error
 // NewManifestPushCommand returns a manifest push command with default values.
 func NewManifestPushCommand() *ManifestPushCommand {
 	return &ManifestPushCommand{
-		RemoteRegistryOptions: options.NewRemoteRegistryOptions(),
+		Common: options.NewCommonOptions(),
+		Remote: options.NewRemoteRegistryOptions(),
 	}
 }
 
 // ManifestDeleteCommand is used to push the target manifest.
 type ManifestPushCommand struct {
-	*options.RemoteRegistryOptions
+	Common *options.CommonOptions
+	Remote *options.RemoteRegistryOptions
 }
 
 // ToCLI transforms to a *cli.Command.
@@ -334,7 +367,10 @@ $ rua registry manifest push hello-world:tag1,tag2 manifest.json
 
 // Flags defines the flags related to the current command.
 func (c *ManifestPushCommand) Flags() []cli.Flag {
-	return c.RemoteRegistryOptions.Flags()
+	flags := []cli.Flag{}
+	flags = append(flags, c.Common.Flags()...)
+	flags = append(flags, c.Remote.Flags()...)
+	return flags
 }
 
 // Run is the main function for the current command
@@ -383,7 +419,12 @@ func (c *ManifestPushCommand) Run(ctx context.Context, cmd *cli.Command) error {
   - Size     : %d
 `, desc.MediaType, desc.Digest, desc.Size)
 
-	repository, err := c.NewRepository(ctx, target.Repository())
+	opts, err := options.MakeDistributionOptions(ctx, c.Common, c.Remote)
+	if err != nil {
+		return err
+	}
+
+	repository, err := remote.NewRepository(ctx, target.Repository(), opts...)
 	if err != nil {
 		return err
 	}

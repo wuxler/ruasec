@@ -92,7 +92,7 @@ func (c *Client) send(request *http.Request) (*http.Response, error) {
 	ctx := request.Context()
 	request.Header = c.expandHeader(request.Header)
 
-	if xhttp.IsDirectRequest(ctx) {
+	if IsDirectRequest(ctx) {
 		return c.client().Do(request)
 	}
 

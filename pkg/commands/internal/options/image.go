@@ -11,13 +11,15 @@ import (
 	"github.com/wuxler/ruasec/pkg/image"
 	"github.com/wuxler/ruasec/pkg/image/docker/rootfs"
 	_ "github.com/wuxler/ruasec/pkg/image/docker/rootfs/register"
-	"github.com/wuxler/ruasec/pkg/image/remote"
+	remoteimage "github.com/wuxler/ruasec/pkg/image/remote"
+	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
 )
 
 // NewImageOptions returns a new *ImageOptions with default values.
 func NewImageOptions() *ImageOptions {
 	return &ImageOptions{
+		Common:      NewCommonOptions(),
 		Remote:      NewRemoteRegistryOptions(),
 		Docker:      NewDockerOptions(),
 		StorageType: "auto",
@@ -26,6 +28,7 @@ func NewImageOptions() *ImageOptions {
 
 // ImageOptions contains the options for the image command
 type ImageOptions struct {
+	Common *CommonOptions
 	Remote *RemoteRegistryOptions
 	Docker *DockerOptions
 	// StorageType is the type of storage to use for the image
@@ -35,6 +38,7 @@ type ImageOptions struct {
 // Flags returns the []cli.Flag related to current options.
 func (o *ImageOptions) Flags() []cli.Flag {
 	flags := []cli.Flag{}
+	flags = append(flags, o.Common.Flags()...)
 	flags = append(flags, o.Remote.Flags()...)
 	flags = append(flags, o.Docker.Flags()...)
 	flags = append(flags, &cli.StringFlag{
@@ -73,10 +77,15 @@ func (o *ImageOptions) NewImageStorage(ctx context.Context, ref ocispecname.Refe
 	case image.StorageTypeDockerFS:
 		return rootfs.NewStorage(ctx, o.Docker.DataRoot)
 	default:
-		client, err := o.Remote.NewRegistry(ctx, ref.Repository().Domain())
+		httpClient, err := o.Remote.NewDistributionClient()
 		if err != nil {
 			return nil, err
 		}
-		return remote.NewStorage(client), nil
+		o.Common.ApplyDistributionClient(httpClient)
+		client, err := remote.NewRegistry(ctx, ref.Repository().Domain(), remote.WithHTTPClient(httpClient))
+		if err != nil {
+			return nil, err
+		}
+		return remoteimage.NewStorage(client), nil
 	}
 }

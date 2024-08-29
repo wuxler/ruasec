@@ -15,6 +15,7 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/errdefs"
 	"github.com/wuxler/ruasec/pkg/ocispec"
+	"github.com/wuxler/ruasec/pkg/util/xcontext"
 	"github.com/wuxler/ruasec/pkg/util/xhttp"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 )
@@ -138,9 +139,27 @@ func GetNextPageURL(resp *http.Response) (*stdurl.URL, error) {
 	return linkURL, nil
 }
 
+type directRequest bool
+
+// WithDirectRequest injects direct signal to tell the http client do request
+// without authorization.
+func WithDirectRequest(ctx context.Context) context.Context {
+	return xcontext.WithValue(ctx, directRequest(true))
+}
+
+// IsDirectRequest checks whether the request should send without authorization
+// by the context of the request.
+func IsDirectRequest(ctx context.Context) bool {
+	value, ok := xcontext.GetValue[directRequest](ctx)
+	if !ok {
+		return false
+	}
+	return bool(value)
+}
+
 // DetectScheme sniffs the protocol of the target registry server is "http" or "https".
 func DetectScheme(ctx context.Context, client xhttp.Client, addr string) (string, error) {
-	ctx = xhttp.WithDirectRequest(ctx)
+	ctx = WithDirectRequest(ctx)
 
 	host, scheme, err := xhttp.ParseHostScheme(addr)
 	if err != nil {
