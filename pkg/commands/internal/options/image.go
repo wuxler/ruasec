@@ -10,7 +10,6 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/image"
 	"github.com/wuxler/ruasec/pkg/image/docker/rootfs"
-	_ "github.com/wuxler/ruasec/pkg/image/docker/rootfs/register"
 	remoteimage "github.com/wuxler/ruasec/pkg/image/remote"
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"

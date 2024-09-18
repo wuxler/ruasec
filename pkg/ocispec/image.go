@@ -6,6 +6,8 @@ import (
 
 	"github.com/opencontainers/go-digest"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
+
+	"github.com/wuxler/ruasec/pkg/util/xfs"
 )
 
 // Image defines the interface for an image.
@@ -62,7 +64,7 @@ type BlobLayer interface {
 // FSLayer represents a file-system based Layer object.
 type FSLayer interface {
 	Layer
-	FSGetter
+	xfs.Getter
 }
 
 // ImageMetadata represents the metadata of an image.

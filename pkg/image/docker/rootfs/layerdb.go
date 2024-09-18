@@ -11,6 +11,7 @@ import (
 	"github.com/opencontainers/go-digest"
 
 	"github.com/wuxler/ruasec/pkg/util/xcontext"
+	"github.com/wuxler/ruasec/pkg/util/xdocker/drivers"
 	"github.com/wuxler/ruasec/pkg/util/xdocker/pathspec"
 	"github.com/wuxler/ruasec/pkg/xlog"
 )
@@ -32,7 +33,7 @@ type layerDB struct {
 }
 
 // GetLayer returns the metadata for the layer with the given ChainID.
-func (db *layerDB) GetLayer(driver Driver, chainid digest.Digest) (*rootfsLayer, error) {
+func (db *layerDB) GetLayer(driver drivers.Driver, chainid digest.Digest) (*rootfsLayer, error) {
 	return db.loadLayer(driver, chainid)
 }
 
@@ -71,7 +72,7 @@ func (db *layerDB) GetAllLayerChainIDs(ctx context.Context) ([]digest.Digest, er
 	return ids, nil
 }
 
-func (db *layerDB) loadLayer(driver Driver, chainid digest.Digest) (*rootfsLayer, error) {
+func (db *layerDB) loadLayer(driver drivers.Driver, chainid digest.Digest) (*rootfsLayer, error) {
 	if err := db.DriverRoot.ValidateLayer(chainid); err != nil {
 		db.mu.Lock()
 		defer db.mu.Unlock()

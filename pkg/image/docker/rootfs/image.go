@@ -12,6 +12,7 @@ import (
 	"github.com/wuxler/ruasec/pkg/image"
 	"github.com/wuxler/ruasec/pkg/ocispec"
 	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
+	"github.com/wuxler/ruasec/pkg/util/xdocker/drivers"
 	"github.com/wuxler/ruasec/pkg/util/xdocker/pathspec"
 )
 
@@ -72,7 +73,7 @@ type rootfsLayer struct {
 	size    int64
 	history *imgspecv1.History
 
-	driver Driver
+	driver drivers.Driver
 }
 
 // SetHistory sets the history of the layer.
@@ -96,11 +97,11 @@ func (l *rootfsLayer) GetFS(ctx context.Context) (fs.FS, error) {
 	if l.driver == nil {
 		return nil, errors.New("storage driver is nil")
 	}
-	differ, ok := l.driver.(DifferDriver)
+	differ, ok := l.driver.(drivers.Differ)
 	if !ok {
 		return nil, fmt.Errorf("storage driver does not implement DifferDriver interface with type %T", l.driver)
 	}
-	getter, err := differ.GetDiffer(l.cacheid)
+	getter, err := differ.Diff(l.cacheid)
 	if err != nil {
 		return nil, err
 	}

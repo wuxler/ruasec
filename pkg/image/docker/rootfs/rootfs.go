@@ -14,6 +14,8 @@ import (
 	"github.com/wuxler/ruasec/pkg/image"
 	"github.com/wuxler/ruasec/pkg/ocispec"
 	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
+	dockerdrivers "github.com/wuxler/ruasec/pkg/util/xdocker/drivers"
+	_ "github.com/wuxler/ruasec/pkg/util/xdocker/drivers/register"
 	"github.com/wuxler/ruasec/pkg/util/xdocker/pathspec"
 	"github.com/wuxler/ruasec/pkg/xlog"
 )
@@ -26,11 +28,11 @@ func init() {
 
 // NewStorage returns a new storage for the given root directory.
 func NewStorage(ctx context.Context, root string) (*Storage, error) {
-	driverType := DetectDriverType(ctx, root)
+	driverType := dockerdrivers.DetectType(ctx, root)
 	if driverType == "" {
 		return nil, errors.New("unable to detect storage type")
 	}
-	driver, err := NewDriver(ctx, root, driverType, DriverConfig{})
+	driver, err := dockerdrivers.New(ctx, root, driverType, dockerdrivers.DriverConfig{})
 	if err != nil {
 		return nil, fmt.Errorf("unable to create storage: %w", err)
 	}
@@ -49,7 +51,7 @@ func NewStorage(ctx context.Context, root string) (*Storage, error) {
 // Storage is a storage for docker filesystem layout.
 type Storage struct {
 	root    pathspec.DriverRoot
-	driver  Driver
+	driver  dockerdrivers.Driver
 	imagedb *imageDB
 	layerdb *layerDB
 	namedb  *nameDB
