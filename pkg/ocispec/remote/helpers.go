@@ -200,7 +200,7 @@ func (p *schemePinger) Ping(ctx context.Context) (bool, error) {
 	}
 	resp, err := p.client.Do(req) //nolint:bodyclose // closed by xio.CloseAndSkipError
 	if err != nil {
-		return false, fmt.Errorf("failed to do request to %s %s: %w", req.Method, req.URL, err)
+		return false, xhttp.MakeRequestError(req, err)
 	}
 	defer xio.CloseAndSkipError(resp.Body)
 	if err := xhttp.Success(resp, http.StatusUnauthorized); err != nil {

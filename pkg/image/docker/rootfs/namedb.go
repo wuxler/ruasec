@@ -10,6 +10,7 @@ import (
 	"slices"
 
 	"github.com/opencontainers/go-digest"
+	"github.com/opencontainers/go-digest/digestset"
 	"github.com/samber/lo"
 
 	"github.com/wuxler/ruasec/pkg/ocispec/name"
@@ -30,6 +31,7 @@ func newNameDB(root pathspec.DriverRoot) *nameDB {
 		},
 		normalized: make(map[string]map[string]digest.Digest),
 		refsByID:   make(map[digest.Digest]map[string]name.Reference),
+		idset:      digestset.NewSet(),
 	}
 }
 
@@ -44,6 +46,8 @@ type nameDB struct {
 	normalized map[string]map[string]digest.Digest
 	// Maps by: image id => normalized image name => name.Reference
 	refsByID map[digest.Digest]map[string]name.Reference
+	// all image id set
+	idset *digestset.Set
 }
 
 // ReferencesByImageID returns all references for the given ImageID.
@@ -82,6 +86,8 @@ func (db *nameDB) lookupImageID(_ context.Context, s string) (digest.Digest, err
 		id = parsed
 	} else if parsed, err := digest.Parse("sha256:" + s); err == nil {
 		id = parsed
+	} else if found, err := db.idset.Lookup(s); err == nil {
+		id = found
 	}
 	if id != "" {
 		// try to find the records with the image id
@@ -110,6 +116,10 @@ func (db *nameDB) reload(ctx context.Context) error {
 		return err
 	}
 
+	normalized := make(map[string]map[string]digest.Digest)
+	refsByID := make(map[digest.Digest]map[string]name.Reference)
+	idset := digestset.NewSet()
+
 	for rawRepoName, repo := range db.raw.Repositories {
 		repoName, err := name.NewRepository(rawRepoName)
 		if err != nil {
@@ -126,17 +136,25 @@ func (db *nameDB) reload(ctx context.Context) error {
 			normalizedRefName := ref.String()
 			normalizedRepoName := repoName.String()
 
-			if db.normalized[normalizedRepoName] == nil {
-				db.normalized[normalizedRepoName] = make(map[string]digest.Digest)
+			if normalized[normalizedRepoName] == nil {
+				normalized[normalizedRepoName] = make(map[string]digest.Digest)
 			}
-			db.normalized[normalizedRepoName][normalizedRefName] = imageID
+			normalized[normalizedRepoName][normalizedRefName] = imageID
 
-			if db.refsByID[imageID] == nil {
-				db.refsByID[imageID] = make(map[string]name.Reference)
+			if refsByID[imageID] == nil {
+				refsByID[imageID] = make(map[string]name.Reference)
 			}
-			db.refsByID[imageID][normalizedRefName] = ref
+			refsByID[imageID][normalizedRefName] = ref
+
+			if err := idset.Add(imageID); err != nil {
+				return err
+			}
 		}
 	}
+
+	db.normalized = normalized
+	db.refsByID = refsByID
+	db.idset = idset
 	return nil
 }
 

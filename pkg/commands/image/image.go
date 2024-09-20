@@ -9,8 +9,6 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
-	"github.com/wuxler/ruasec/pkg/image"
-	"github.com/wuxler/ruasec/pkg/ocispec"
 	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 )
@@ -92,20 +90,14 @@ func (c *ConfigFetchCommand) Flags() []cli.Flag {
 // Run is the main function for the current command
 func (c *ConfigFetchCommand) Run(ctx context.Context, cmd *cli.Command) error {
 	name := cmd.Args().First()
-	ref, err := ocispecname.NewReference(name)
+	scheme, _ := ocispecname.SplitScheme(name)
+
+	storage, err := c.Image.NewImageStorage(ctx, scheme)
 	if err != nil {
 		return err
 	}
 
-	storage, err := c.Image.NewImageStorage(ctx, ref)
-	if err != nil {
-		return err
-	}
-
-	img, err := storage.GetImage(ctx, ref, image.WithMetadataApplier(func(meta *ocispec.ImageMetadata) {
-		// override metadata name with raw input
-		meta.Name = name
-	}))
+	img, err := storage.GetImage(ctx, name)
 	if err != nil {
 		return err
 	}

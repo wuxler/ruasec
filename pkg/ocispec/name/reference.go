@@ -91,7 +91,7 @@ func newReference(name string, opts options) (Reference, error) {
 
 func parseReference(name string, opts options) (Reference, error) {
 	var zero Reference
-	scheme, name := splitAndTrimScheme(name)
+	scheme, name := SplitScheme(name)
 
 	matches := internal.AnchoredReferenceRegexp.FindStringSubmatch(name)
 	if matches == nil {

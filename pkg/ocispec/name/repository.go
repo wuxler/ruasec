@@ -62,7 +62,7 @@ func parseRepository(name string, opts options) (repository, error) {
 	}
 
 	// split "http(s)://<host>/<path>" to "http(s)" and "<host>/<path>
-	scheme, name := splitAndTrimScheme(name)
+	scheme, name := SplitScheme(name)
 
 	// check if it is repository name only
 	var domain string

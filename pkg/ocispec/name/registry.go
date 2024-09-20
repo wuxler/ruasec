@@ -97,7 +97,7 @@ func parseRegistry(name string, opts options) (registry, error) {
 	}
 
 	// split "http(s)://<host>" to "http(s)" and "<host>"
-	scheme, _ := splitAndTrimScheme(name)
+	scheme, _ := SplitScheme(name)
 	if scheme != "" {
 		url, err := stdurl.Parse(name)
 		if err != nil {
@@ -162,8 +162,8 @@ func isDockerLegacyDomain(hostname string) (string, bool) {
 	return hostname, false
 }
 
-// splitAndTrimScheme splits scheme prefix, returns scheme and trimmed name.
-func splitAndTrimScheme(name string) (scheme, remainder string) {
+// SplitScheme splits scheme prefix, returns scheme and trimmed name.
+func SplitScheme(name string) (scheme, remainder string) {
 	matches, _ := xregexp.SubmatchCaptures(internal.AnchoredSchemePrefixRegexp, name)
 	if prefix, ok := matches["prefix"]; ok {
 		scheme = strings.TrimSuffix(prefix, "://")

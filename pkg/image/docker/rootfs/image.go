@@ -11,15 +11,14 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/image"
 	"github.com/wuxler/ruasec/pkg/ocispec"
-	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/xdocker/drivers"
 	"github.com/wuxler/ruasec/pkg/util/xdocker/pathspec"
 )
 
 var _ ocispec.ImageCloser = (*rootfsImage)(nil)
 
-// NewImage returns the image speicified by the parsed name.
-func NewImage(ctx context.Context, root string, ref ocispecname.Reference, opts ...image.ImageOption) (ocispec.ImageCloser, error) {
+// NewImage returns the image speicified by the name ref.
+func NewImage(ctx context.Context, root string, ref string, opts ...image.ImageOption) (ocispec.ImageCloser, error) {
 	storage, err := NewStorage(ctx, root)
 	if err != nil {
 		return nil, err

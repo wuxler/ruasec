@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/samber/lo"
 
@@ -67,6 +69,10 @@ func MakeResponseError(resp *http.Response, err error) error {
 func MakeRequestError(req *http.Request, err error) error {
 	if err == nil {
 		return nil
+	}
+	if nerr, ok := err.(*url.Error); ok { //nolint: errorlint // only *url.Error is handled
+		nerr.Op = strings.ToUpper(nerr.Op)
+		return nerr
 	}
 	return fmt.Errorf("%s %s: %w", req.Method, req.URL.Redacted(), err)
 }

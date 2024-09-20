@@ -3,8 +3,8 @@ package remote
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/puzpuzpuz/xsync/v3"
 	"github.com/wuxler/ruasec/pkg/errdefs"
 	"github.com/wuxler/ruasec/pkg/image"
 	"github.com/wuxler/ruasec/pkg/ocispec"
@@ -12,6 +12,7 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec/manifest"
 	_ "github.com/wuxler/ruasec/pkg/ocispec/manifest/all"
 	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
+	ocispecremote "github.com/wuxler/ruasec/pkg/ocispec/remote"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 )
 
@@ -24,13 +25,17 @@ func init() {
 }
 
 // NewStorage returns a remote type storage.
-func NewStorage(client *remote.Registry) *Storage {
-	return &Storage{client: client}
+func NewStorage(client *ocispecremote.Client) *Storage {
+	return &Storage{
+		client:     client,
+		registries: xsync.NewMapOf[string, *remote.Registry](),
+	}
 }
 
 // Storage is a wrapper for remote registry implements Storage interface.
 type Storage struct {
-	client *remote.Registry
+	client     *ocispecremote.Client
+	registries *xsync.MapOf[string, *remote.Registry]
 }
 
 // Type returns the unique identity type of the provider.
@@ -39,22 +44,31 @@ func (p *Storage) Type() string {
 }
 
 // Image returns the image specified by the ref.
-func (p *Storage) GetImage(ctx context.Context, ref ocispecname.Reference, opts ...image.ImageOption) (ocispec.ImageCloser, error) {
-	client := p.client
+func (p *Storage) GetImage(ctx context.Context, ref string, opts ...image.ImageOption) (ocispec.ImageCloser, error) {
 	options := image.MakeImageOptions(opts...)
 
-	// check if the reference is in the registry
-	expectHostname := client.Name().Hostname()
-	if ref.Repository().Domain().Hostname() != expectHostname {
-		return nil, fmt.Errorf("target reference %q seems not in the registry %q", ref, expectHostname)
+	parsedRef, err := ocispecname.NewReference(ref)
+	if err != nil {
+		return nil, err
 	}
+
+	domain := parsedRef.Repository().Domain()
+	client, ok := p.registries.Load(domain.Hostname())
+	if !ok {
+		client, err = remote.NewRegistry(ctx, domain, remote.WithHTTPClient(p.client))
+		if err != nil {
+			return nil, err
+		}
+		p.registries.Store(domain.Hostname(), client)
+	}
+
 	// get repository client for the reference
-	repo := client.Repository(ref.Repository().Path())
+	repo := client.Repository(parsedRef.Repository().Path())
 	img := &remoteImage{
 		client: repo,
-		name:   ref,
+		name:   parsedRef,
 	}
-	tagOrDigest, err := ocispecname.Identify(ref)
+	tagOrDigest, err := ocispecname.Identify(parsedRef)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +102,7 @@ func (p *Storage) GetImage(ctx context.Context, ref ocispecname.Reference, opts 
 	metadata := ocispec.ImageMetadata{
 		ID:       img.manifest.Config().Digest,
 		Digest:   img.descriptor.Digest,
-		Name:     ref.String(),
+		Name:     parsedRef.String(),
 		Platform: img.descriptor.Platform,
 	}
 
@@ -113,10 +127,10 @@ func (p *Storage) GetImage(ctx context.Context, ref ocispecname.Reference, opts 
 	}
 
 	metadata.RepoDigests = append(metadata.RepoDigests,
-		ocispecname.MustWithDigest(ref.Repository(), metadata.Digest).String())
-	if tagged, ok := ocispecname.IsTagged(ref); ok {
+		ocispecname.MustWithDigest(parsedRef.Repository(), metadata.Digest).String())
+	if tagged, ok := ocispecname.IsTagged(parsedRef); ok {
 		metadata.RepoTags = append(metadata.RepoTags,
-			ocispecname.MustWithTag(ref.Repository(), tagged.Tag()).String())
+			ocispecname.MustWithTag(parsedRef.Repository(), tagged.Tag()).String())
 	}
 	options.ApplyMetadata(&metadata)
 

@@ -65,14 +65,14 @@ func (s *Storage) Type() string {
 // GetImage returns the image specified by ref.
 //
 // NOTE: The image must be closed when processing is finished.
-func (s *Storage) GetImage(ctx context.Context, ref ocispecname.Reference, opts ...image.ImageOption) (ocispec.ImageCloser, error) {
-	imageid, err := s.namedb.LookupImageID(ctx, ref.String())
+func (s *Storage) GetImage(ctx context.Context, ref string, opts ...image.ImageOption) (ocispec.ImageCloser, error) {
+	imageid, err := s.namedb.LookupImageID(ctx, ref)
 	if err != nil {
 		return nil, err
 	}
 
 	metadata := ocispec.ImageMetadata{
-		Name: ref.String(),
+		Name: ref,
 		ID:   imageid,
 	}
 
