@@ -77,6 +77,7 @@ func (o *ImageOptions) NewImageStorage(ctx context.Context, scheme string) (imag
 		if err != nil {
 			return nil, err
 		}
+		o.Common.ApplyDistributionClient(client)
 		return remoteimage.NewStorage(client), nil
 	}
 }
