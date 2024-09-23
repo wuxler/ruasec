@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/puzpuzpuz/xsync/v3"
+
 	"github.com/wuxler/ruasec/pkg/errdefs"
 	"github.com/wuxler/ruasec/pkg/image"
 	"github.com/wuxler/ruasec/pkg/ocispec"
