@@ -10,7 +10,7 @@ require (
 	github.com/klauspost/compress v1.17.9
 	github.com/klauspost/pgzip v1.2.6
 	github.com/manifoldco/promptui v0.9.0
-	github.com/maypok86/otter v1.2.1
+	github.com/maypok86/otter v1.2.2
 	github.com/opencontainers/go-digest v1.0.1-0.20231212064514-429d0316a3dd
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/puzpuzpuz/xsync/v3 v3.4.0
