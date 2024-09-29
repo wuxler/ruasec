@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/containerd/platforms"
 	"github.com/opencontainers/image-spec/identity"
@@ -66,6 +67,9 @@ func (s *Storage) Type() string {
 //
 // NOTE: The image must be closed when processing is finished.
 func (s *Storage) GetImage(ctx context.Context, ref string, opts ...image.ImageOption) (ocispec.ImageCloser, error) {
+	if strings.HasPrefix(ref, s.Type()) {
+		ref = strings.TrimPrefix(ref, s.Type()+"://")
+	}
 	imageid, err := s.namedb.LookupImageID(ctx, ref)
 	if err != nil {
 		return nil, err
