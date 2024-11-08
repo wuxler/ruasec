@@ -18,13 +18,13 @@ import (
 // NewLogoutCommand returns a LogoutCommand with default values.
 func NewLogoutCommand() *LogoutCommand {
 	return &LogoutCommand{
-		RemoteRegistryOptions: options.NewRemoteRegistryOptions(),
+		ContainerRegistry: options.NewContainerRegistry(),
 	}
 }
 
 // LogoutCommand used to remove the credentials from the local auth file.
 type LogoutCommand struct {
-	*options.RemoteRegistryOptions
+	*options.ContainerRegistry
 }
 
 // ToCLI transforms to a *cli.Command.
@@ -32,10 +32,10 @@ func (c *LogoutCommand) ToCLI() *cli.Command {
 	return &cli.Command{
 		Name:  "logout",
 		Usage: "Log out and remove credentials for a remote registry",
-		UsageText: `rua registry logout [OPTIONS] REGISTRY
+		UsageText: `ruasec registry logout [OPTIONS] REGISTRY
 
 # Log out from a remote registry
-$ rua registry logout registry.example.com
+$ ruasec registry logout registry.example.com
 `,
 		ArgsUsage: "REGISTRY",
 		Flags:     c.Flags(),
@@ -45,12 +45,12 @@ $ rua registry logout registry.example.com
 
 // Flags defines the flags related to the current command.
 func (c *LogoutCommand) Flags() []cli.Flag {
-	return c.RemoteRegistryOptions.Flags()
+	return c.ContainerRegistry.Flags()
 }
 
 // Run is the main function for the current command
 func (c *LogoutCommand) Run(ctx context.Context, cmd *cli.Command) error {
-	authFile := authfile.NewAuthFile(c.AuthFile)
+	authFile := authfile.NewAuthFile(c.ContainerRegistry.AuthFile)
 	if err := authFile.Load(); err != nil {
 		cmdhelper.Fprintf(cmd.Writer, "Warning: Failed to load auth file: %s", err)
 	}

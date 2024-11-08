@@ -16,9 +16,10 @@ type RegistryCommand struct{}
 // ToCLI tranforms to a *cli.Command.
 func (c *RegistryCommand) ToCLI() *cli.Command {
 	return &cli.Command{
-		Name:    "registry",
-		Aliases: []string{"reg"},
-		Usage:   "Container registry operations",
+		Name:            "registry",
+		Aliases:         []string{"cr"},
+		Usage:           "Container registry operations",
+		HideHelpCommand: true,
 		Commands: []*cli.Command{
 			NewLoginCommand().ToCLI(),
 			NewLogoutCommand().ToCLI(),

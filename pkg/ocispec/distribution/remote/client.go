@@ -13,6 +13,7 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/appinfo"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
+	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/xcache"
 	"github.com/wuxler/ruasec/pkg/util/xhttp"
 	"github.com/wuxler/ruasec/pkg/util/xio"
@@ -86,6 +87,32 @@ func (c *Client) Do(request *http.Request) (*http.Response, error) {
 		return nil, xhttp.MakeRequestError(request, err)
 	}
 	return resp, nil
+}
+
+// NewRegistry creates a client which implements distribution-spec interface to the remote registry.
+func (c *Client) NewRegistry(ctx context.Context, name ocispecname.Registry) (*Registry, error) {
+	scheme := name.Scheme()
+	if scheme == "" || (scheme != "http" && scheme != "https") {
+		scheme, err := DetectScheme(ctx, c, name.Hostname())
+		if err != nil {
+			return nil, err
+		}
+		name = name.WithScheme(scheme)
+	}
+	spec := &Registry{
+		name:   name,
+		client: c,
+	}
+	return spec, nil
+}
+
+// NewRepository creates a client which implements distribution-spec interface to the remote repository.
+func (c *Client) NewRepository(ctx context.Context, name ocispecname.Repository) (*Repository, error) {
+	registry, err := c.NewRegistry(ctx, name.Domain())
+	if err != nil {
+		return nil, err
+	}
+	return registry.RepositoryE(name.Path())
 }
 
 func (c *Client) send(request *http.Request) (*http.Response, error) {

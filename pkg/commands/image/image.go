@@ -50,22 +50,22 @@ func (c *ConfigFetchCommand) ToCLI() *cli.Command {
 	return &cli.Command{
 		Name:  "config",
 		Usage: "Get the config file of an image",
-		UsageText: `rua image config [OPTIONS] [SCHEME://]IMAGE
+		UsageText: `ruasec image config [OPTIONS] [SCHEME://]IMAGE
 
 # Fetch the raw image config file
-$ rua image config hello-world:latest
+$ ruasec image config hello-world:latest
 
 # Fetch the image config file and prettify the output
-$ rua image config --pretty hello-world:latest
+$ ruasec image config --pretty hello-world:latest
 
 # Fetch the image config from docker-rootfs storage type specified
-$ rua image config --storage-type docker-rootfs hello-world:latest
-$ rua image config docker-rootfs://hello-world:latest
+$ ruasec image config --storage-type docker-rootfs hello-world:latest
+$ ruasec image config docker-rootfs://hello-world:latest
 
 # Fetch the image config from remote storage type specified
-$ rua image config --storage-type remote hello-world:latest
-$ rua image config remote://hello-world:latest
-$ rua image config https://hello-world:latest
+$ ruasec image config --storage-type remote hello-world:latest
+$ ruasec image config remote://hello-world:latest
+$ ruasec image config https://hello-world:latest
 `,
 		ArgsUsage: "IMAGE",
 		Flags:     c.Flags(),
@@ -92,7 +92,7 @@ func (c *ConfigFetchCommand) Run(ctx context.Context, cmd *cli.Command) error {
 	name := cmd.Args().First()
 	scheme, _ := ocispecname.SplitScheme(name)
 
-	storage, err := c.Image.NewImageStorage(ctx, scheme)
+	storage, err := c.Image.NewImageStorage(ctx, cmd.Writer, scheme)
 	if err != nil {
 		return err
 	}

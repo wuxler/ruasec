@@ -13,17 +13,14 @@ import (
 	"github.com/wuxler/ruasec/pkg/commands/registry"
 )
 
-const (
-	appName = "rua"
-)
-
 func main() {
 	app := cli.Command{
-		Name:                  appName,
-		Usage:                 "Rua is a tool to do security checks",
+		Name:                  "ruasec",
+		Usage:                 "ruasec is a helpful tool to do security checks",
 		Suggest:               true,
 		EnableShellCompletion: true,
 		HideVersion:           true,
+		HideHelpCommand:       true,
 		Commands: []*cli.Command{
 			commands.NewVersionCommand().ToCLI(),
 			registry.New().ToCLI(),

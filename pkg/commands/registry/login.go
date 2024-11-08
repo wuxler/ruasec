@@ -15,22 +15,21 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec/authn"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/authfile"
 	"github.com/wuxler/ruasec/pkg/ocispec/authn/credentials"
-	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
 )
 
 // NewLoginCommand returns a LoginCommand with default values.
 func NewLoginCommand() *LoginCommand {
 	return &LoginCommand{
-		Common: options.NewCommonOptions(),
-		Remote: options.NewRemoteRegistryOptions(),
+		Common: options.NewCommon(),
+		Remote: options.NewContainerRegistry(),
 	}
 }
 
 // LoginCommand used to login remote registry.
 type LoginCommand struct {
-	Common *options.CommonOptions
-	Remote *options.RemoteRegistryOptions
+	Common *options.Common
+	Remote *options.ContainerRegistry
 
 	Username      string `json:"username,omitempty" yaml:"username,omitempty"`
 	Password      string `json:"password,omitempty" yaml:"password,omitempty"`
@@ -42,19 +41,19 @@ func (c *LoginCommand) ToCLI() *cli.Command {
 	return &cli.Command{
 		Name:  "login",
 		Usage: "Log in to a remote registry",
-		UsageText: `rua registry login [OPTIONS] REGISTRY
+		UsageText: `ruasec registry login [OPTIONS] REGISTRY
 
 # Log in with an interactive terminal:
-$ rua registry login registry.example.com
+$ ruasec registry login registry.example.com
 
 # Log in with username and password from command line flags:
-$ rua registry login -u username -p password registry.example.com
+$ ruasec registry login -u username -p password registry.example.com
 
 # Log in with username and password from stdin:
-$ cat password.txt | rua registry login -u username --password-stdin registry.example.com
+$ cat password.txt | ruasec registry login -u username --password-stdin registry.example.com
 
 # Log in the private registry deployed with self-signed ssl certificate:
-$ rua registry login --insecure registry.example.com
+$ ruasec registry login --insecure registry.example.com
 `,
 		ArgsUsage: "REGISTRY",
 		Flags:     c.Flags(),
@@ -70,7 +69,7 @@ func (c *LoginCommand) Flags() []cli.Flag {
 			Name:        "username",
 			Aliases:     []string{"u"},
 			Usage:       "registry username",
-			Sources:     cli.EnvVars("RUA_REGISTRY_USERNAME", "DOCKER_USERNAME"),
+			Sources:     cli.EnvVars("RUASEC_REGISTRY_USERNAME", "DOCKER_USERNAME"),
 			Destination: &c.Username,
 			Value:       c.Username,
 		},
@@ -78,14 +77,14 @@ func (c *LoginCommand) Flags() []cli.Flag {
 			Name:        "password",
 			Aliases:     []string{"p"},
 			Usage:       "registry password",
-			Sources:     cli.EnvVars("RUA_REGISTRY_PASSWORD", "DOCKER_PASSWORD"),
+			Sources:     cli.EnvVars("RUASEC_REGISTRY_PASSWORD", "DOCKER_PASSWORD"),
 			Destination: &c.Password,
 			Value:       c.Password,
 		},
 		&cli.BoolFlag{
 			Name:        "password-stdin",
 			Usage:       "take password from stdin input",
-			Sources:     cli.EnvVars("RUA_REGISTRY_PASSWORD_STDIN"),
+			Sources:     cli.EnvVars("RUASEC_REGISTRY_PASSWORD_STDIN"),
 			Destination: &c.PasswordStdin,
 			Value:       c.PasswordStdin,
 		},
@@ -136,11 +135,10 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 	if err := authFile.Load(); err != nil {
 		cmdhelper.Fprintf(cmd.Writer, "Warning: Failed to load auth file: %s", err)
 	}
-	client, err := c.Remote.NewDistributionClient()
+	client, err := c.Remote.NewClient(cmd.Writer)
 	if err != nil {
 		return err
 	}
-	c.Common.ApplyDistributionClient(client)
 
 	if c.Password == "" && c.Username == "" {
 		// try to login with the crendetial found in default auth files
@@ -151,12 +149,12 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 			}
 			return authConfig
 		}
-		registry, err := remote.NewRegistry(ctx, serverAddressName, remote.WithHTTPClient(client))
+		registry, err := client.NewRegistry(ctx, serverAddressName)
 		if err != nil {
 			return err
 		}
-		if err := registry.Ping(ctx); err == nil {
-			return nil
+		if err := registry.Ping(ctx); err != nil {
+			return err
 		}
 	}
 
@@ -173,7 +171,8 @@ func (c *LoginCommand) run(ctx context.Context, cmd *cli.Command) error {
 	client.AuthProvider = func(_ context.Context, _ string) authn.AuthConfig {
 		return authConfig
 	}
-	registry, err := remote.NewRegistry(ctx, serverAddressName, remote.WithHTTPClient(client))
+
+	registry, err := client.NewRegistry(ctx, serverAddressName)
 	if err != nil {
 		return err
 	}

@@ -44,10 +44,10 @@ func ManifestAcceptHeader(mediaTypes ...string) string {
 	return strings.Join(mediaTypes, ", ")
 }
 
-// DescriptorFromResponse generates Descriptor from the http response.
+// makeDescriptorFromResponse generates Descriptor from the http response.
 //
 //nolint:gocognit
-func DescriptorFromResponse(resp *http.Response, knownDigest digest.Digest) (imgspecv1.Descriptor, error) {
+func makeDescriptorFromResponse(resp *http.Response, knownDigest digest.Digest) (imgspecv1.Descriptor, error) {
 	var zero imgspecv1.Descriptor
 	// check Content-Type
 	mediaType, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
@@ -111,10 +111,10 @@ func DescriptorFromResponse(resp *http.Response, knownDigest digest.Digest) (img
 	return desc, nil
 }
 
-// GetNextPageURL checks if there  is a "Link" header in a http.Response which contains a
+// getNextPageURL checks if there  is a "Link" header in a http.Response which contains a
 // link to the next page. If yes it returns the url.URL of the next page, otherwise returns
 // nil and error.
-func GetNextPageURL(resp *http.Response) (*stdurl.URL, error) {
+func getNextPageURL(resp *http.Response) (*stdurl.URL, error) {
 	link := resp.Header.Get("Link")
 	if link == "" {
 		return nil, errdefs.Newf(errdefs.ErrNotFound, "missing 'Link' header in response")

@@ -8,7 +8,6 @@ import (
 
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
-	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	"github.com/wuxler/ruasec/pkg/ocispec/iter"
 	"github.com/wuxler/ruasec/pkg/ocispec/name"
 )
@@ -16,15 +15,15 @@ import (
 // NewCatalogCommand returns a command with default values.
 func NewCatalogCommand() *CatalogCommand {
 	return &CatalogCommand{
-		Common: options.NewCommonOptions(),
-		Remote: options.NewRemoteRegistryOptions(),
+		Common: options.NewCommon(),
+		Remote: options.NewContainerRegistry(),
 	}
 }
 
 // CatalogCommand is used to list repositories in the remote registry.
 type CatalogCommand struct {
-	Common *options.CommonOptions
-	Remote *options.RemoteRegistryOptions
+	Common *options.Common
+	Remote *options.ContainerRegistry
 }
 
 // ToCLI transforms to a *cli.Command.
@@ -33,10 +32,10 @@ func (c *CatalogCommand) ToCLI() *cli.Command {
 		Name:    "catalog",
 		Aliases: []string{"list"},
 		Usage:   "List repositories in the remote registry",
-		UsageText: `rua registry catalog [OPTIONS] REGISTRY
+		UsageText: `ruasec registry catalog [OPTIONS] REGISTRY
 
 # List repositories in the remote registry
-$ rua registry catalog example.registry.com
+$ ruasec registry catalog example.registry.com
 `,
 		ArgsUsage: "REGISTRY",
 		Flags:     c.Flags(),
@@ -59,11 +58,11 @@ func (c *CatalogCommand) Run(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	opts, err := options.MakeDistributionOptions(ctx, c.Common, c.Remote)
+	client, err := c.Remote.NewClient(cmd.Writer)
 	if err != nil {
 		return err
 	}
-	registry, err := remote.NewRegistry(ctx, target, opts...)
+	registry, err := client.NewRegistry(ctx, target)
 	if err != nil {
 		return err
 	}
@@ -77,7 +76,7 @@ func (c *CatalogCommand) Run(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		for _, repo := range repos {
-			cmdhelper.Fprintf(cmd.Writer, repo.Name().Path())
+			cmdhelper.Fprintf(cmd.Writer, repo)
 		}
 	}
 	return nil

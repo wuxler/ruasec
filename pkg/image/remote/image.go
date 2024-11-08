@@ -16,7 +16,6 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	"github.com/wuxler/ruasec/pkg/ocispec/manifest"
 	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
-	ocispecremote "github.com/wuxler/ruasec/pkg/ocispec/remote"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 	"github.com/wuxler/ruasec/pkg/xlog"
 )
@@ -24,7 +23,7 @@ import (
 var _ ocispec.ImageCloser = (*remoteImage)(nil)
 
 // NewImage returns the image speicified by the parsed name.
-func NewImage(ctx context.Context, client *ocispecremote.Client, ref string, opts ...image.ImageOption) (ocispec.ImageCloser, error) {
+func NewImage(ctx context.Context, client *remote.Client, ref string, opts ...image.ImageOption) (ocispec.ImageCloser, error) {
 	return NewStorage(client).GetImage(ctx, ref, opts...)
 }
 

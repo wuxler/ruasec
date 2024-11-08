@@ -3,6 +3,7 @@ package options
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/samber/lo"
@@ -16,8 +17,8 @@ import (
 // NewImageOptions returns a new *ImageOptions with default values.
 func NewImageOptions() *ImageOptions {
 	return &ImageOptions{
-		Common:      NewCommonOptions(),
-		Remote:      NewRemoteRegistryOptions(),
+		Common:      NewCommon(),
+		Remote:      NewContainerRegistry(),
 		Docker:      NewDockerOptions(),
 		StorageType: "auto",
 	}
@@ -25,8 +26,8 @@ func NewImageOptions() *ImageOptions {
 
 // ImageOptions contains the options for the image command
 type ImageOptions struct {
-	Common *CommonOptions
-	Remote *RemoteRegistryOptions
+	Common *Common
+	Remote *ContainerRegistry
 	Docker *DockerOptions
 	// StorageType is the type of storage to use for the image
 	StorageType string
@@ -65,7 +66,7 @@ func (o *ImageOptions) allowedStorageTypes() []string {
 }
 
 // NewImageStorage returns a new image storage based on the options.
-func (o *ImageOptions) NewImageStorage(ctx context.Context, scheme string) (image.Storage, error) {
+func (o *ImageOptions) NewImageStorage(ctx context.Context, w io.Writer, scheme string) (image.Storage, error) {
 	if o.StorageType != "" && !strings.EqualFold(o.StorageType, "auto") {
 		scheme = strings.ToLower(o.StorageType)
 	}
@@ -73,11 +74,10 @@ func (o *ImageOptions) NewImageStorage(ctx context.Context, scheme string) (imag
 	case image.StorageTypeDockerFS:
 		return rootfs.NewStorage(ctx, o.Docker.DataRoot)
 	default:
-		client, err := o.Remote.NewDistributionClient()
+		client, err := o.Remote.NewClient(w)
 		if err != nil {
 			return nil, err
 		}
-		o.Common.ApplyDistributionClient(client)
 		return remoteimage.NewStorage(client), nil
 	}
 }

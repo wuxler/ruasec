@@ -13,7 +13,6 @@ import (
 	"github.com/wuxler/ruasec/pkg/ocispec/manifest"
 	_ "github.com/wuxler/ruasec/pkg/ocispec/manifest/all"
 	ocispecname "github.com/wuxler/ruasec/pkg/ocispec/name"
-	ocispecremote "github.com/wuxler/ruasec/pkg/ocispec/remote"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 )
 
@@ -26,7 +25,7 @@ func init() {
 }
 
 // NewStorage returns a remote type storage.
-func NewStorage(client *ocispecremote.Client) *Storage {
+func NewStorage(client *remote.Client) *Storage {
 	return &Storage{
 		client:     client,
 		registries: xsync.NewMapOf[string, *remote.Registry](),
@@ -35,7 +34,7 @@ func NewStorage(client *ocispecremote.Client) *Storage {
 
 // Storage is a wrapper for remote registry implements Storage interface.
 type Storage struct {
-	client     *ocispecremote.Client
+	client     *remote.Client
 	registries *xsync.MapOf[string, *remote.Registry]
 }
 
@@ -56,7 +55,7 @@ func (p *Storage) GetImage(ctx context.Context, ref string, opts ...image.ImageO
 	domain := parsedRef.Repository().Domain()
 	client, ok := p.registries.Load(domain.Hostname())
 	if !ok {
-		client, err = remote.NewRegistry(ctx, domain, remote.WithHTTPClient(p.client))
+		client, err := p.client.NewRegistry(ctx, domain)
 		if err != nil {
 			return nil, err
 		}

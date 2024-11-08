@@ -34,9 +34,9 @@ func SetWorkspace(path string) {
 }
 
 // DefaultWorkspace returns the default workspace directory which
-// is `~/.rua`
+// is `~/.ruasec`
 func DefaultWorkspace() Workspace {
-	return Workspace(filepath.Join(homedir.MustGet(), ".rua"))
+	return Workspace(filepath.Join(homedir.MustGet(), ".ruasec"))
 }
 
 // Workspace is the path to application workspace directory. All data

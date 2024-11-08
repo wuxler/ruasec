@@ -29,7 +29,7 @@ var (
 
 type blobWriter struct {
 	ctx       context.Context
-	spec      *Spec
+	spec      *Registry
 	chunkSize int64
 	location  *stdurl.URL
 

@@ -18,7 +18,6 @@ import (
 	"github.com/wuxler/ruasec/pkg/commands/internal/options"
 	"github.com/wuxler/ruasec/pkg/errdefs"
 	"github.com/wuxler/ruasec/pkg/ocispec/cas"
-	"github.com/wuxler/ruasec/pkg/ocispec/distribution/remote"
 	"github.com/wuxler/ruasec/pkg/ocispec/name"
 	"github.com/wuxler/ruasec/pkg/util/xio"
 	_ "github.com/wuxler/ruasec/pkg/util/xio/compression/builtin"
@@ -52,15 +51,15 @@ func (c *BlobCommand) ToCLI() *cli.Command {
 // NewBlobStatCommand returns a blob stat command with default values.
 func NewBlobStatCommand() *BlobStatCommand {
 	return &BlobStatCommand{
-		Common: options.NewCommonOptions(),
-		Remote: options.NewRemoteRegistryOptions(),
+		Common: options.NewCommon(),
+		Remote: options.NewContainerRegistry(),
 	}
 }
 
 // BlobStatCommand used to stat the descriptor of the target blob from the remote registry.
 type BlobStatCommand struct {
-	Common *options.CommonOptions
-	Remote *options.RemoteRegistryOptions
+	Common *options.Common
+	Remote *options.ContainerRegistry
 }
 
 // Flags defines the flags related to the current command.
@@ -77,10 +76,10 @@ func (c *BlobStatCommand) ToCLI() *cli.Command {
 		Name:    "stat",
 		Aliases: []string{"desc", "descriptor"},
 		Usage:   "Get the descriptor of the target blob",
-		UsageText: `rua registry blob stat [OPTIONS] NAME@DIGEST
+		UsageText: `ruasec registry blob stat [OPTIONS] NAME@DIGEST
 
 # Stat the descriptor of the target blob from the remote registry
-$ rua registry blob stat hello-world@sha256:c1ec31eb59444d78df06a974d155e597c894ab4cda84f08294145e845394988e
+$ ruasec registry blob stat hello-world@sha256:c1ec31eb59444d78df06a974d155e597c894ab4cda84f08294145e845394988e
 `,
 		ArgsUsage: "BLOB",
 		Flags:     c.Flags(),
@@ -100,12 +99,11 @@ func (c *BlobStatCommand) Run(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("target must be a digest reference formatted as NAME@DIGEST but got %q", ref)
 	}
 
-	opts, err := options.MakeDistributionOptions(ctx, c.Common, c.Remote)
+	client, err := c.Remote.NewClient(cmd.Writer)
 	if err != nil {
 		return err
 	}
-
-	repository, err := remote.NewRepository(ctx, target.Repository(), opts...)
+	repository, err := client.NewRepository(ctx, target.Repository())
 	if err != nil {
 		return err
 	}
@@ -127,15 +125,15 @@ func (c *BlobStatCommand) Run(ctx context.Context, cmd *cli.Command) error {
 // NewBlobFetchCommand returns a blob fetch command with default values.
 func NewBlobFetchCommand() *BlobFetchCommand {
 	return &BlobFetchCommand{
-		Common: options.NewCommonOptions(),
-		Remote: options.NewRemoteRegistryOptions(),
+		Common: options.NewCommon(),
+		Remote: options.NewContainerRegistry(),
 	}
 }
 
 // BlobFetchCommand used to fetch the blob from the remote registry.
 type BlobFetchCommand struct {
-	Common *options.CommonOptions
-	Remote *options.RemoteRegistryOptions
+	Common *options.Common
+	Remote *options.ContainerRegistry
 }
 
 // ToCLI transforms to a *cli.Command.
@@ -144,13 +142,13 @@ func (c *BlobFetchCommand) ToCLI() *cli.Command {
 		Name:    "fetch",
 		Aliases: []string{"get"},
 		Usage:   "Get the blob from the remote registry",
-		UsageText: `rua registry blob fetch [OPTIONS] NAME@DIGEST
+		UsageText: `ruasec registry blob fetch [OPTIONS] NAME@DIGEST
 
 # Fetch raw blob from the remote registry
-$ rua registry blob fetch  hello-world@sha256:c1ec31eb59444d78df06a974d155e597c894ab4cda84f08294145e845394988e blob.tar.gz
+$ ruasec registry blob fetch  hello-world@sha256:c1ec31eb59444d78df06a974d155e597c894ab4cda84f08294145e845394988e blob.tar.gz
 
 # Fetch a blob from registry and print the raw blob content
-$ rua registry blob fetch hello-world@sha256:c1ec31eb59444d78df06a974d155e597c894ab4cda84f08294145e845394988e - > blob.tar.gz
+$ ruasec registry blob fetch hello-world@sha256:c1ec31eb59444d78df06a974d155e597c894ab4cda84f08294145e845394988e - > blob.tar.gz
 `,
 		ArgsUsage: "BLOB",
 		Flags:     c.Flags(),
@@ -197,12 +195,11 @@ func (c *BlobFetchCommand) Run(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("target must be a digest reference formatted as NAME@DIGEST but got %q", ref)
 	}
 
-	opts, err := options.MakeDistributionOptions(ctx, c.Common, c.Remote)
+	client, err := c.Remote.NewClient(cmd.Writer)
 	if err != nil {
 		return err
 	}
-
-	repository, err := remote.NewRepository(ctx, target.Repository(), opts...)
+	repository, err := client.NewRepository(ctx, target.Repository())
 	if err != nil {
 		return err
 	}
@@ -235,15 +232,15 @@ func (c *BlobFetchCommand) Run(ctx context.Context, cmd *cli.Command) error {
 // NewBlobDeleteCommand returns a blob delete command with default values.
 func NewBlobDeleteCommand() *BlobDeleteCommand {
 	return &BlobDeleteCommand{
-		Common: options.NewCommonOptions(),
-		Remote: options.NewRemoteRegistryOptions(),
+		Common: options.NewCommon(),
+		Remote: options.NewContainerRegistry(),
 	}
 }
 
 // BlobDeleteCommand is used to delete the target blob.
 type BlobDeleteCommand struct {
-	Common *options.CommonOptions
-	Remote *options.RemoteRegistryOptions
+	Common *options.Common
+	Remote *options.ContainerRegistry
 	Force  bool `json:"force,omitempty" yaml:"force,omitempty"`
 }
 
@@ -253,10 +250,10 @@ func (c *BlobDeleteCommand) ToCLI() *cli.Command {
 		Name:    "delete",
 		Aliases: []string{"del", "remove", "rm"},
 		Usage:   "Delete the target blob from remote registry",
-		UsageText: `rua registry blob delete [OPTIONS] NAME@DIGEST
+		UsageText: `ruasec registry blob delete [OPTIONS] NAME@DIGEST
 
 # Delete the target blob from the remote registry
-$ rua registry blob delete hello-world:latest
+$ ruasec registry blob delete hello-world:latest
 `,
 		ArgsUsage: "BLOB",
 		Flags:     c.Flags(),
@@ -292,12 +289,11 @@ func (c *BlobDeleteCommand) Run(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("target must be a digest reference formatted as NAME@DIGEST but got %q", ref)
 	}
 
-	opts, err := options.MakeDistributionOptions(ctx, c.Common, c.Remote)
+	client, err := c.Remote.NewClient(cmd.Writer)
 	if err != nil {
 		return err
 	}
-
-	repository, err := remote.NewRepository(ctx, target.Repository(), opts...)
+	repository, err := client.NewRepository(ctx, target.Repository())
 	if err != nil {
 		return err
 	}
@@ -349,16 +345,16 @@ func (c *BlobDeleteCommand) Run(ctx context.Context, cmd *cli.Command) error {
 // NewBlobPushCommand returns a blob push command with default values.
 func NewBlobPushCommand() *BlobPushCommand {
 	return &BlobPushCommand{
-		Remote: options.NewRemoteRegistryOptions(),
-		Common: options.NewCommonOptions(),
+		Remote: options.NewContainerRegistry(),
+		Common: options.NewCommon(),
 		Size:   -1,
 	}
 }
 
 // BlobPushCommand is used to push the target blob.
 type BlobPushCommand struct {
-	Remote *options.RemoteRegistryOptions
-	Common *options.CommonOptions
+	Remote *options.ContainerRegistry
+	Common *options.Common
 	Size   int64 `json:"size,omitempty" yaml:"size,omitempty"`
 }
 
@@ -367,16 +363,16 @@ func (c *BlobPushCommand) ToCLI() *cli.Command {
 	return &cli.Command{
 		Name:  "push",
 		Usage: "Push the target blob to a remote registry",
-		UsageText: `rua registry blob push [OPTIONS] NAME[@DIGEST] FILE
+		UsageText: `ruasec registry blob push [OPTIONS] NAME[@DIGEST] FILE
 
 # Push the target blob to a remote registry
-$ rua registry blob push hello-world blob.tar.gz
+$ ruasec registry blob push hello-world blob.tar.gz
 
 # Push the target blob with specific digest
-$ rua registry blob push hello-world@sha256:c1ec31eb59444d78df06a974d155e597c894ab4cda84f08294145e845394988e blob.tar.gz
+$ ruasec registry blob push hello-world@sha256:c1ec31eb59444d78df06a974d155e597c894ab4cda84f08294145e845394988e blob.tar.gz
 
 # Push the target blob from stdin with blob size and digest
-$ rua registry blob push --size 2459 hello-world@sha256:c1ec31eb59444d78df06a974d155e597c894ab4cda84f08294145e845394988e -
+$ ruasec registry blob push --size 2459 hello-world@sha256:c1ec31eb59444d78df06a974d155e597c894ab4cda84f08294145e845394988e -
 `,
 		ArgsUsage: "BLOB",
 		Flags:     c.Flags(),
@@ -416,12 +412,11 @@ func (c *BlobPushCommand) Run(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("target must be formatted as NAME[@DIGEST] but got %q", ref)
 	}
 
-	opts, err := options.MakeDistributionOptions(ctx, c.Common, c.Remote)
+	client, err := c.Remote.NewClient(cmd.Writer)
 	if err != nil {
 		return err
 	}
-
-	repository, err := remote.NewRepository(ctx, target, opts...)
+	repository, err := client.NewRepository(ctx, target)
 	if err != nil {
 		return err
 	}

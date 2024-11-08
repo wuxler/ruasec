@@ -52,7 +52,7 @@ tasks:
       - ./**/*.go
       - Taskfile.yaml
     cmds:
-      - go build -ldflags '{{.LDFLAGS}}' -o {{.OUTPUT}}/rua{{exeExt}} ./cmd/rua
+      - go build -ldflags '{{.LDFLAGS}}' -o {{.OUTPUT}}/ruasec{{exeExt}} ./cmd/ruasec
 
   clean:
     desc: Clean temp files and folders
