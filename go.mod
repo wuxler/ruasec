@@ -21,7 +21,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/therootcompany/xz v1.0.1
 	github.com/ulikunitz/xz v0.5.12
-	github.com/urfave/cli/v3 v3.0.0-alpha9.2
+	github.com/urfave/cli/v3 v3.0.0-alpha9.3
 	go.uber.org/mock v0.5.0
 	golang.org/x/sync v0.9.0
 	golang.org/x/sys v0.27.0
