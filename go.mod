@@ -24,7 +24,7 @@ require (
 	github.com/urfave/cli/v3 v3.0.0-alpha9.2
 	go.uber.org/mock v0.5.0
 	golang.org/x/sync v0.8.0
-	golang.org/x/sys v0.26.0
+	golang.org/x/sys v0.27.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 )
