@@ -23,8 +23,8 @@ func Test_applyFlag(t *testing.T) {
 	for _, flag := range flags {
 		applyFlag(flag)
 	}
-	assert.Equal(t, flag1.Category, "common")
-	assert.Equal(t, flag2.Local, true)
+	assert.Equal(t, "common", flag1.Category)
+	assert.True(t, flag2.Local)
 }
 
 func applyFlag(flag cli.Flag) {

@@ -47,26 +47,18 @@ func (o *ContainerRegistry) Flags() []cli.Flag {
 	return flags
 }
 
-func (o *ContainerRegistry) NewAuthProvider() (remote.AuthProvider, error) {
-	if o.AuthFile != "" {
-		authProvider, err := remote.NewAuthProviderFromAuthFilePath(o.AuthFile)
-		if err != nil {
-			return nil, err
-		}
-		return authProvider, nil
-	}
-	return nil, nil //nolint:nilnil // nil means no auth used
-}
-
 // NewClient returns a new remote registry client.
 func (o *ContainerRegistry) NewClient(w io.Writer) (*remote.Client, error) {
 	tr, err := o.Remote.NewHTTPTransport(w)
 	if err != nil {
 		return nil, err
 	}
-	authProvider, err := o.NewAuthProvider()
-	if err != nil {
-		return nil, err
+	var authProvider remote.AuthProvider
+	if o.AuthFile != "" {
+		authProvider, err = remote.NewAuthProviderFromAuthFilePath(o.AuthFile)
+		if err != nil {
+			return nil, err
+		}
 	}
 	client := remote.NewClient()
 	client.Client = &http.Client{Transport: tr}
