@@ -102,6 +102,9 @@ func (o *Remote) NewHTTPTransport(w io.Writer) (http.RoundTripper, error) {
 	tr.TLSClientConfig = tlsConfig
 	if o.DumpEnable {
 		dump := xhttp.NewDumpTransport(tr)
+		if w != nil {
+			dump.Out = w
+		}
 		return dump, nil
 	}
 	return tr, nil

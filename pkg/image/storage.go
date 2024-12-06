@@ -11,6 +11,8 @@ import (
 type Storage interface {
 	// Type returns the unique identity type of the provider.
 	Type() string
+	// Close closes the storage and releases resources.
+	Close() error
 	Getter
 }
 

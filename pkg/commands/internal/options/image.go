@@ -10,6 +10,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/wuxler/ruasec/pkg/image"
+	"github.com/wuxler/ruasec/pkg/image/docker/archive"
 	"github.com/wuxler/ruasec/pkg/image/docker/rootfs"
 	remoteimage "github.com/wuxler/ruasec/pkg/image/remote"
 )
@@ -73,6 +74,8 @@ func (o *ImageOptions) NewImageStorage(ctx context.Context, w io.Writer, scheme 
 	switch scheme {
 	case image.StorageTypeDockerFS:
 		return rootfs.NewStorage(ctx, o.Docker.DataRoot)
+	case image.StorageTypeDockerArchive:
+		return archive.NewStorageFromFile(ctx, o.Docker.ArchiveFile)
 	default:
 		client, err := o.Remote.NewClient(w)
 		if err != nil {

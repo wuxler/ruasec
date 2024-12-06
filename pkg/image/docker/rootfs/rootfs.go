@@ -151,3 +151,8 @@ func (s *Storage) GetImage(ctx context.Context, ref string, opts ...image.ImageO
 	}
 	return img, nil
 }
+
+// Close closes the storage and releases resources.
+func (s *Storage) Close() error {
+	return nil
+}

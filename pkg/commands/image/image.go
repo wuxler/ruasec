@@ -52,20 +52,25 @@ func (c *ConfigFetchCommand) ToCLI() *cli.Command {
 		Usage: "Get the config file of an image",
 		UsageText: `ruasec image config [OPTIONS] [SCHEME://]IMAGE
 
-# Fetch the raw image config file
+# Fetch the raw image config file, default to remote storage type
 $ ruasec image config hello-world:latest
 
-# Fetch the image config file and prettify the output
+# Fetch the image config file and prettify the output, default to remote storage type
 $ ruasec image config --pretty hello-world:latest
-
-# Fetch the image config from docker-rootfs storage type specified
-$ ruasec image config --storage-type docker-rootfs hello-world:latest
-$ ruasec image config docker-rootfs://hello-world:latest
 
 # Fetch the image config from remote storage type specified
 $ ruasec image config --storage-type remote hello-world:latest
 $ ruasec image config remote://hello-world:latest
 $ ruasec image config https://hello-world:latest
+
+# Fetch the image config from docker-rootfs storage type specified
+$ ruasec image config --storage-type docker-rootfs hello-world:latest
+$ ruasec image config --docker-root-data /data/docker docker-rootfs://hello-world:latest
+$ ruasec image config docker-rootfs://hello-world:latest
+
+# Fetch the image config from docker-archive storage type specified
+$ docker save -o hello-world.tar hello-world:latest
+$ ruasec image config --docker-archive-file hello-world.tar docker-archive://hello-world:latest
 `,
 		ArgsUsage: "IMAGE",
 		Flags:     c.Flags(),
@@ -96,6 +101,7 @@ func (c *ConfigFetchCommand) Run(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	defer xio.CloseAndSkipError(storage)
 
 	img, err := storage.GetImage(ctx, name)
 	if err != nil {
