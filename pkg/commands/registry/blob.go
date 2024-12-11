@@ -152,7 +152,7 @@ $ ruasec registry blob fetch hello-world@sha256:c1ec31eb59444d78df06a974d155e597
 `,
 		ArgsUsage: "BLOB",
 		Flags:     c.Flags(),
-		Before:    cli.BeforeFunc(cmdhelper.MinimumNArgs(1)),
+		Before:    cmdhelper.BeforeFunc(cmdhelper.MinimumNArgs(1)),
 		Action:    c.Run,
 	}
 }
@@ -376,7 +376,7 @@ $ ruasec registry blob push --size 2459 hello-world@sha256:c1ec31eb59444d78df06a
 `,
 		ArgsUsage: "BLOB",
 		Flags:     c.Flags(),
-		Before:    cli.BeforeFunc(cmdhelper.MinimumNArgs(1)),
+		Before:    cmdhelper.BeforeFunc(cmdhelper.MinimumNArgs(1)),
 		Action:    c.Run,
 	}
 }

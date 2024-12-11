@@ -78,7 +78,7 @@ $ ruasec image config docker-daemon://hello-world:latest
 `,
 		ArgsUsage: "IMAGE",
 		Flags:     c.Flags(),
-		Before: cli.BeforeFunc(cmdhelper.ActionFuncChain(
+		Before: cmdhelper.BeforeFunc(cmdhelper.ActionFuncChain(
 			cmdhelper.ExactArgs(1),
 			c.Image.Common.Init,
 		)),

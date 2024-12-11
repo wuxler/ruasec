@@ -39,7 +39,7 @@ $ ruasec registry catalog example.registry.com
 `,
 		ArgsUsage: "REGISTRY",
 		Flags:     c.Flags(),
-		Before:    cli.BeforeFunc(cmdhelper.ExactArgs(1)),
+		Before:    cmdhelper.BeforeFunc(cmdhelper.ExactArgs(1)),
 		Action:    c.Run,
 	}
 }

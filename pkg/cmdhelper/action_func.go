@@ -11,6 +11,13 @@ import (
 // ActionFunc is a function type to set *cli.Command Action
 type ActionFunc func(ctx context.Context, cmd *cli.Command) error
 
+// BeforeFunc returns a cli.BeforeFunc wrapped with ActionFunc.
+func BeforeFunc(fn ActionFunc) cli.BeforeFunc {
+	return func(ctx context.Context, c *cli.Command) (context.Context, error) {
+		return nil, fn(ctx, c)
+	}
+}
+
 // ActionFuncChain wraps multiple ActionFunc into one process.
 func ActionFuncChain(handlers ...ActionFunc) ActionFunc {
 	return func(ctx context.Context, cmd *cli.Command) error {
