@@ -1,12 +1,8 @@
 package options
 
 import (
-	"context"
-
 	"github.com/urfave/cli/v3"
 
-	"github.com/wuxler/ruasec/pkg/image"
-	"github.com/wuxler/ruasec/pkg/image/docker/rootfs"
 	"github.com/wuxler/ruasec/pkg/util/xdocker"
 )
 
@@ -18,7 +14,8 @@ const (
 // NewDockerOptions returns a new *DockerOptions with default values.
 func NewDockerOptions() *DockerOptions {
 	return &DockerOptions{
-		DataRoot: xdocker.DefaultDataRoot,
+		DataRoot:   xdocker.DefaultDataRoot,
+		DaemonHost: xdocker.DefaultDaemonHost,
 	}
 }
 
@@ -28,6 +25,8 @@ type DockerOptions struct {
 	DataRoot string
 	// ArchiveFile is the path to the docker archive file by `docker save`.
 	ArchiveFile string
+	// DaemonHost is the host of the docker daemon.
+	DaemonHost string
 }
 
 // Flags returns the []cli.Flag related to current options.
@@ -49,10 +48,13 @@ func (o *DockerOptions) Flags() []cli.Flag {
 			Destination: &o.ArchiveFile,
 			Category:    DockerFlagCategory,
 		},
+		&cli.StringFlag{
+			Name:        "docker-daemon-host",
+			Usage:       "host of the docker daemon",
+			Sources:     cli.EnvVars("RUA_DOCKER_DAEMON_HOST", "DOCKER_HOST"),
+			Value:       o.DaemonHost,
+			Destination: &o.DaemonHost,
+			Category:    DockerFlagCategory,
+		},
 	}
-}
-
-// NewImageStorage returns the image storage with the local docker storage.
-func (o *DockerOptions) NewImageStorage(ctx context.Context) (image.Storage, error) {
-	return rootfs.NewStorage(ctx, o.DataRoot)
 }

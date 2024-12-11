@@ -1,6 +1,7 @@
 package options
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"io"
@@ -9,18 +10,23 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/wuxler/ruasec/pkg/appinfo"
 	"github.com/wuxler/ruasec/pkg/cmdhelper"
 	"github.com/wuxler/ruasec/pkg/util/xhttp"
+	"github.com/wuxler/ruasec/pkg/xlog"
 )
 
 // NewCommon returns a *CommonOptions with default values.
 func NewCommon() *Common {
-	return &Common{}
+	return &Common{
+		Workspace: string(appinfo.GetWorkspace()),
+	}
 }
 
 // Common are options that are common to all commands.
 type Common struct {
-	Debug bool `json:"debug,omitempty" yaml:"debug,omitempty"`
+	Debug     bool   `json:"debug,omitempty" yaml:"debug,omitempty"`
+	Workspace string `json:"workspace,omitempty" yaml:"workspace,omitempty"`
 }
 
 // Flags returns the []cli.Flag related to current options.
@@ -33,7 +39,23 @@ func (o *Common) Flags() []cli.Flag {
 			Usage:       "enable debug mode",
 			Destination: &o.Debug,
 		},
+		&cli.StringFlag{
+			Name:        "workspace",
+			Aliases:     []string{"w"},
+			Sources:     cli.EnvVars("RUA_WORKSPACE"),
+			Usage:       "workspace directory",
+			Destination: &o.Workspace,
+		},
 	}
+}
+
+// Init implements [cmdhelper.ActionFunc] and setups global configurations.
+func (o *Common) Init(_ context.Context, _ *cli.Command) error {
+	if o.Debug {
+		xlog.SetLevel(xlog.LevelDebug)
+	}
+	appinfo.SetWorkspace(o.Workspace)
+	return nil
 }
 
 // NewRemote returns the options with default values.

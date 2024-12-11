@@ -71,11 +71,18 @@ $ ruasec image config docker-rootfs://hello-world:latest
 # Fetch the image config from docker-archive storage type specified
 $ docker save -o hello-world.tar hello-world:latest
 $ ruasec image config --docker-archive-file hello-world.tar docker-archive://hello-world:latest
+
+# Fetch the image config from docker-daemon storage type specified
+$ ruasec image config --storage-type docker-daemon hello-world:latest
+$ ruasec image config docker-daemon://hello-world:latest
 `,
 		ArgsUsage: "IMAGE",
 		Flags:     c.Flags(),
-		Before:    cli.BeforeFunc(cmdhelper.ExactArgs(1)),
-		Action:    c.Run,
+		Before: cli.BeforeFunc(cmdhelper.ActionFuncChain(
+			cmdhelper.ExactArgs(1),
+			c.Image.Common.Init,
+		)),
+		Action: c.Run,
 	}
 }
 

@@ -9,8 +9,10 @@ import (
 	"github.com/samber/lo"
 	"github.com/urfave/cli/v3"
 
+	"github.com/wuxler/ruasec/pkg/appinfo"
 	"github.com/wuxler/ruasec/pkg/image"
 	"github.com/wuxler/ruasec/pkg/image/docker/archive"
+	"github.com/wuxler/ruasec/pkg/image/docker/daemon"
 	"github.com/wuxler/ruasec/pkg/image/docker/rootfs"
 	remoteimage "github.com/wuxler/ruasec/pkg/image/remote"
 )
@@ -76,6 +78,11 @@ func (o *ImageOptions) NewImageStorage(ctx context.Context, w io.Writer, scheme 
 		return rootfs.NewStorage(ctx, o.Docker.DataRoot)
 	case image.StorageTypeDockerArchive:
 		return archive.NewStorageFromFile(ctx, o.Docker.ArchiveFile)
+	case image.StorageTypeDockerDaemon:
+		config := daemon.DefaultConfig()
+		config.CacheDir = appinfo.GetWorkspace().TempDir()
+		config.Host = o.Docker.DaemonHost
+		return daemon.NewStorageWithConfig(ctx, config)
 	default:
 		client, err := o.Remote.NewClient(w)
 		if err != nil {
