@@ -57,7 +57,7 @@ $ ruasec registry login --insecure registry.example.com
 `,
 		ArgsUsage: "REGISTRY",
 		Flags:     c.Flags(),
-		Before:    cli.BeforeFunc(c.Validate),
+		Before:    cmdhelper.BeforeFunc(c.Validate),
 		Action:    c.Run,
 	}
 }

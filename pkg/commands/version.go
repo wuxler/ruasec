@@ -28,7 +28,7 @@ func (c *VersionCommand) ToCLI() *cli.Command {
 		Name:   "version",
 		Usage:  "Show version",
 		Flags:  c.Flags(),
-		Before: cli.BeforeFunc(cmdhelper.NoArgs()),
+		Before: cmdhelper.BeforeFunc(cmdhelper.NoArgs()),
 		Action: c.Run,
 	}
 }

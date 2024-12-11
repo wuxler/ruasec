@@ -57,7 +57,7 @@ $ ruasec registry repo tags example.registry.com/my/repo
 `,
 		ArgsUsage: "REPOSITORY",
 		Flags:     c.Flags(),
-		Before:    cli.BeforeFunc(cmdhelper.ExactArgs(1)),
+		Before:    cmdhelper.BeforeFunc(cmdhelper.ExactArgs(1)),
 		Action:    c.Run,
 	}
 }
