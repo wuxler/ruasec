@@ -17,7 +17,7 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.4.0
 	github.com/samber/lo v1.47.0
 	github.com/smallnest/deepcopy v1.0.0
-	github.com/spf13/afero v1.11.0
+	github.com/spf13/afero v1.12.0
 	github.com/spf13/cast v1.7.1
 	github.com/stretchr/testify v1.10.0
 	github.com/therootcompany/xz v1.0.1
@@ -56,6 +56,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 )
