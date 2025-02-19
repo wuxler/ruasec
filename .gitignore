@@ -239,4 +239,9 @@ bin/
 .go/
 .golangci-lint/
 
+### Clacky configuration files
+.1024*
+!.1024
+.breakpoints
+
 
