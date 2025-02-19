@@ -15,7 +15,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.1-0.20231212064514-429d0316a3dd
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/puzpuzpuz/xsync/v3 v3.5.1
-	github.com/samber/lo v1.47.0
+	github.com/samber/lo v1.49.1
 	github.com/smallnest/deepcopy v1.0.0
 	github.com/spf13/afero v1.12.0
 	github.com/spf13/cast v1.7.1
@@ -24,8 +24,8 @@ require (
 	github.com/ulikunitz/xz v0.5.12
 	github.com/urfave/cli/v3 v3.0.0-beta1
 	go.uber.org/mock v0.5.0
-	golang.org/x/sync v0.10.0
-	golang.org/x/sys v0.29.0
+	golang.org/x/sync v0.11.0
+	golang.org/x/sys v0.30.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 )
