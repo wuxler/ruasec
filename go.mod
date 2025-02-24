@@ -8,7 +8,7 @@ require (
 	github.com/containers/libtrust v0.0.0-20230121012942-c1716e8a8d01
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707
-	github.com/klauspost/compress v1.17.11
+	github.com/klauspost/compress v1.18.0
 	github.com/klauspost/pgzip v1.2.6
 	github.com/manifoldco/promptui v0.9.0
 	github.com/maypok86/otter v1.2.4
