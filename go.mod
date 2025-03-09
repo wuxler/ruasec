@@ -8,7 +8,8 @@ require (
 	github.com/containers/libtrust v0.0.0-20230121012942-c1716e8a8d01
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707
-	github.com/klauspost/compress v1.17.11
+	github.com/gin-gonic/gin v1.10.0
+	github.com/klauspost/compress v1.18.0
 	github.com/klauspost/pgzip v1.2.6
 	github.com/manifoldco/promptui v0.9.0
 	github.com/maypok86/otter v1.2.4
@@ -47,7 +48,6 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/gin-gonic/gin v1.10.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
