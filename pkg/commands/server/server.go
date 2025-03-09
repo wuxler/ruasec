@@ -72,8 +72,9 @@ func (c *Command) Run(ctx context.Context, cmd *cli.Command) error {
 
 	// Start the HTTP server
 	srv := &http.Server{
-		Addr:    address,
-		Handler: router,
+		Addr:              address,
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	// Start server in a goroutine
@@ -90,7 +91,7 @@ func (c *Command) Run(ctx context.Context, cmd *cli.Command) error {
 	<-ctx.Done()
 
 	// Create a timeout context for shutdown
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:gomnd // disable magic number lint error
 	defer cancel()
 
 	// Shutdown the server
