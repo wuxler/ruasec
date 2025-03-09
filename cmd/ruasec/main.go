@@ -11,6 +11,7 @@ import (
 	"github.com/wuxler/ruasec/pkg/commands"
 	"github.com/wuxler/ruasec/pkg/commands/image"
 	"github.com/wuxler/ruasec/pkg/commands/registry"
+	"github.com/wuxler/ruasec/pkg/commands/server"
 )
 
 func main() {
@@ -25,6 +26,7 @@ func main() {
 			commands.NewVersionCommand().ToCLI(),
 			registry.New().ToCLI(),
 			image.New().ToCLI(),
+			server.NewCommand().ToCLI(),
 		},
 		ExitErrHandler: func(ctx context.Context, c *cli.Command, err error) {
 			cli.HandleExitCoder(err)

@@ -1,4 +1,4 @@
 # Command to run when "Run" button clicked
-run_command: go run ./cmd/ruasec/main.go
+run_command: go run ./cmd/ruasec/main.go server
 # Command to install or update dependencies, will execute each time a new thread created to ensure dependencies up-to-date
 dependency_command: go mod download
