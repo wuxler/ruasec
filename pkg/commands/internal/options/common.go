@@ -107,7 +107,7 @@ func (o *Remote) Flags() []cli.Flag {
 
 // NewHTTPTransport returns a new http transport with options.
 func (o *Remote) NewHTTPTransport(w io.Writer) (http.RoundTripper, error) {
-	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr := http.DefaultTransport.(*http.Transport).Clone() //nolint:errcheck // explicitly type assertion
 	// load tls config
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: o.Insecure, //nolint:gosec // explicit skip verify

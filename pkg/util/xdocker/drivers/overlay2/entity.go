@@ -186,7 +186,7 @@ func (efsys *entityFS) Open(name string) (fs.File, error) {
 		// if the directory is an opaque whiteout and no virtual file exists,
 		// create opaque whiteout file
 		if xos.IsEmptyDir(efsys.fullpath(name)) {
-			if err := efsys.virtual.MkdirAll(name, 0o755); err != nil { //nolint:gomnd // no magic number
+			if err := efsys.virtual.MkdirAll(name, 0o755); err != nil { //nolint:mnd // no magic number
 				return nil, err
 			}
 			if _, err := efsys.virtual.Create(filepath.Join(name, xfile.OpaqueWhiteout)); err != nil {
