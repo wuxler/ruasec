@@ -5,12 +5,16 @@ on:
     branches: [ "main" ]
     tags: [ "v*" ]
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
 
 jobs:
   build-and-test:
     strategy:
       matrix:
-        go-version: [1.22.x]
+        go-version: [1.24.x]
         platform: [ubuntu-latest, macos-latest]
     runs-on: ${{matrix.platform}}
     steps:
