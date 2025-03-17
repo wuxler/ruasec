@@ -1,6 +1,7 @@
 module github.com/wuxler/ruasec
 
 go 1.22
+toolchain go1.24.1
 
 require (
 	github.com/benbjohnson/clock v1.3.5
@@ -25,7 +26,7 @@ require (
 	github.com/ulikunitz/xz v0.5.12
 	github.com/urfave/cli/v3 v3.0.0-beta1
 	go.uber.org/mock v0.5.0
-	golang.org/x/sync v0.11.0
+	golang.org/x/sync v0.12.0
 	golang.org/x/sys v0.30.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
