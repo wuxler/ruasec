@@ -14,18 +14,17 @@ jobs:
   build-and-test:
     strategy:
       matrix:
-        go-version: [1.24.x]
         platform: [ubuntu-latest, macos-latest]
     runs-on: ${{matrix.platform}}
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
 
-    - name: Set up Go ${{matrix.go-version}}
+    - name: Set up Go
       uses: actions/setup-go@v5
       id: go
       with:
-        go-version: ${{matrix.go-version}}
+        go-version-file: go.mod
 
     - name: Install Go Task Tool
       uses: arduino/setup-task@v2
