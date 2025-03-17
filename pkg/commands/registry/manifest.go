@@ -335,7 +335,7 @@ $ ruasec registry manifest push hello-world:tag1,tag2 manifest.json
 `,
 		ArgsUsage: "NAME[:TAG[,TAG][...]|@DIGEST] FILE",
 		Flags:     c.Flags(),
-		Before:    cmdhelper.BeforeFunc(cmdhelper.ExactArgs(2)), //nolint:gomnd // explicitly args number
+		Before:    cmdhelper.BeforeFunc(cmdhelper.ExactArgs(2)), //nolint:mnd // explicitly args number
 		Action:    c.Run,
 	}
 }

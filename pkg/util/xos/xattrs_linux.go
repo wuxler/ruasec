@@ -18,7 +18,7 @@ func Lgetxattr(path string, attr string) ([]byte, error) {
 	}
 
 	// Start with a 128 length byte array
-	dest := make([]byte, 128) //nolint:gomnd // 128 is a reasonable size for most xattrs
+	dest := make([]byte, 128) //nolint:mnd // 128 is a reasonable size for most xattrs
 	sz, errno := unix.Lgetxattr(path, attr, dest)
 
 	for errno == unix.ERANGE {

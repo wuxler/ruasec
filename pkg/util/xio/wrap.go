@@ -40,7 +40,7 @@ type readCloserWriteToWrapper struct {
 }
 
 func (r readCloserWriteToWrapper) WriteTo(w io.Writer) (int64, error) {
-	return r.Reader.(io.WriterTo).WriteTo(w)
+	return r.Reader.(io.WriterTo).WriteTo(w) //nolint:errcheck // explicitly type assertion
 }
 
 func (r readCloserWriteToWrapper) Close() error {

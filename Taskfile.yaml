@@ -88,13 +88,13 @@ tasks:
     aliases: [l]
     deps: [install:golangci-lint]
     cmds:
-      - "{{.BIN_PREFIX}} golangci-lint run --verbose --concurrency 4 --timeout 5m --skip-dirs-use-default"
+      - "{{.BIN_PREFIX}} golangci-lint run --verbose --concurrency 4 --timeout 5m --exclude-dirs-use-default"
 
   lint:fix:
     desc: Run golangci-lint and fixes linting issues automatically
     deps: [install:golangci-lint]
     cmds:
-      - "{{.BIN_PREFIX}} golangci-lint run --verbose --concurrency 4 --timeout 5m --skip-dirs-use-default --fix"
+      - "{{.BIN_PREFIX}} golangci-lint run --verbose --concurrency 4 --timeout 5m --exclude-dirs-use-default --fix"
 
   install:tools:
     desc: Install all dependent tools
@@ -116,7 +116,7 @@ tasks:
 
   install:golangci-lint:
     vars:
-      VERSION: v1.56.2
+      VERSION: v1.64.7
     env:
       GOBIN: "{{.BIN}}"
     desc: Install golangci-lint@{{.VERSION}} to {{.BIN}}

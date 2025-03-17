@@ -51,7 +51,7 @@ func (s *memoryCacheImpl[T]) Get(ctx context.Context, key string, options ...Opt
 	if err != nil {
 		return xgeneric.ZeroValue[T](), false
 	}
-	return loaded.(T), true
+	return loaded.(T), true //nolint:errcheck // explicitly type assertion
 }
 
 // Put returns the value of the key.

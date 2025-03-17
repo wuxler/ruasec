@@ -173,8 +173,8 @@ func copyFilePermissions(src, dst string) {
 		return
 	}
 
-	uid = int(fi.Sys().(*syscall.Stat_t).Uid)
-	gid = int(fi.Sys().(*syscall.Stat_t).Gid)
+	uid = int(fi.Sys().(*syscall.Stat_t).Uid) //nolint:errcheck // explicitly type assertion
+	gid = int(fi.Sys().(*syscall.Stat_t).Gid) //nolint:errcheck // explicitly type assertion
 
 	if uid > 0 && gid > 0 {
 		_ = os.Chown(dst, uid, gid) //nolint:errcheck // ignore this error
@@ -221,7 +221,7 @@ func parseLegacyDockerConfigFileAsJSON(configFile *DockerConfigFile, data []byte
 	return json.Unmarshal(data, &configFile.AuthConfigs)
 }
 
-//nolint:gomnd // ignore magic number lint warning
+//nolint:mnd // ignore magic number lint warning
 func parseLegacyDockerConfigFileAsPlainText(configFile *DockerConfigFile, data []byte) error {
 	arr := strings.Split(string(data), "\n")
 	if len(arr) < 2 {
