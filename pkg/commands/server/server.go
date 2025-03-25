@@ -91,7 +91,7 @@ func (c *Command) Run(ctx context.Context, cmd *cli.Command) error {
 	<-ctx.Done()
 
 	// Create a timeout context for shutdown
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:gomnd // disable magic number lint error
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:mnd // disable magic number lint error
 	defer cancel()
 
 	// Shutdown the server

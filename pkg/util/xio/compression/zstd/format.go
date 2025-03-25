@@ -97,11 +97,11 @@ func normalizeEncoderLevel(level int) zstd.EncoderLevel {
 	// once we also have c based implementation move this to helper pkg
 	if level < 0 {
 		return zstd.SpeedDefault
-	} else if level < 3 { //nolint:gomnd // zstd levels
+	} else if level < 3 { //nolint:mnd // zstd levels
 		return zstd.SpeedFastest
-	} else if level < 7 { //nolint:gomnd // zstd levels
+	} else if level < 7 { //nolint:mnd // zstd levels
 		return zstd.SpeedDefault
-	} else if level < 9 { //nolint:gomnd // zstd levels
+	} else if level < 9 { //nolint:mnd // zstd levels
 		return zstd.SpeedBetterCompression
 	}
 	return zstd.SpeedBestCompression

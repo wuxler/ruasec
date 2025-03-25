@@ -12,7 +12,7 @@ var (
 
 // NewFakeDirFileInfo creates a new *[FakeFileInfo] with mode set to fs.ModeDir.
 func NewFakeDirFileInfo(name string) *FakeFileInfo {
-	return NewFakeFileInfo(name).WithMode(fs.ModeDir | 0o644) //nolint:gomnd // defult permission mode mask
+	return NewFakeFileInfo(name).WithMode(fs.ModeDir | 0o644) //nolint:mnd // defult permission mode mask
 }
 
 // NewFakeFileInfo creates a new *[FakeFileInfo].

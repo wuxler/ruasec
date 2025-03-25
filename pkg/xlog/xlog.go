@@ -17,7 +17,7 @@ func init() {
 }
 
 // Default returns the default Logger.
-func Default() *Logger { return defaultLogger.Load().(*Logger) }
+func Default() *Logger { return defaultLogger.Load().(*Logger) } //nolint:errcheck // explicitly type assertion
 
 // SetDefault makes l the default Logger.
 // After this call, output from the log package's default Logger
