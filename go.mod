@@ -18,7 +18,7 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.5.1
 	github.com/samber/lo v1.49.1
 	github.com/smallnest/deepcopy v1.0.0
-	github.com/spf13/afero v1.12.0
+	github.com/spf13/afero v1.14.0
 	github.com/spf13/cast v1.7.1
 	github.com/stretchr/testify v1.10.0
 	github.com/therootcompany/xz v1.0.1
@@ -79,7 +79,8 @@ require (
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/time v0.11.0 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 )
