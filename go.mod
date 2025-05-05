@@ -6,7 +6,7 @@ require (
 	github.com/benbjohnson/clock v1.3.5
 	github.com/containerd/platforms v0.2.1
 	github.com/containers/libtrust v0.0.0-20230121012942-c1716e8a8d01
-	github.com/docker/docker v27.5.1+incompatible
+	github.com/docker/docker v28.1.1+incompatible
 	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707
 	github.com/gin-gonic/gin v1.10.0
 	github.com/klauspost/compress v1.18.0
@@ -16,17 +16,17 @@ require (
 	github.com/opencontainers/go-digest v1.0.1-0.20231212064514-429d0316a3dd
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/puzpuzpuz/xsync/v3 v3.5.1
-	github.com/samber/lo v1.49.1
+	github.com/samber/lo v1.50.0
 	github.com/smallnest/deepcopy v1.0.0
 	github.com/spf13/afero v1.14.0
-	github.com/spf13/cast v1.7.1
+	github.com/spf13/cast v1.8.0
 	github.com/stretchr/testify v1.10.0
 	github.com/therootcompany/xz v1.0.1
 	github.com/ulikunitz/xz v0.5.12
-	github.com/urfave/cli/v3 v3.0.0-beta1
-	go.uber.org/mock v0.5.0
-	golang.org/x/sync v0.12.0
-	golang.org/x/sys v0.31.0
+	github.com/urfave/cli/v3 v3.3.2
+	go.uber.org/mock v0.5.2
+	golang.org/x/sync v0.14.0
+	golang.org/x/sys v0.33.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -60,6 +60,7 @@ require (
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
+	github.com/moby/sys/atomicwriter v0.1.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
