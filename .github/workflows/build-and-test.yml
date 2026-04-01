@@ -18,10 +18,10 @@ jobs:
     runs-on: ${{matrix.platform}}
     steps:
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       id: go
       with:
         go-version-file: go.mod
@@ -39,7 +39,7 @@ jobs:
       run: task test
 
     - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v6
       with:
         token: ${{secrets.CODECOV_TOKEN}}
 
